@@ -1,5 +1,5 @@
 
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Deref};
 
 fn main() {
     // let mut board: [[u8; 9]; 9] = [[0; 9]; 9];
@@ -59,7 +59,6 @@ impl Sudoku {
 
     fn check_valid(&self) -> bool {
         let (m, n) = self.get_len();
-        let flag = true;
 
         for i in 0..m{
             for j in 0..n-1 {
@@ -77,33 +76,29 @@ impl Sudoku {
             }
         }
 
-        let mut c = 0;
 
-        //TODO: fix index out of bounds
-
-        while c < 27 {
-            let mut freq_map = HashMap::new();
-
-            for i in c..c+3 {
-                for j in c..c+3 {
-                    if self.board[i][j] != 0 {
-                        let count = freq_map.entry(self.board[i][j]).or_insert(0);
-                        *count += 1;
-                    } 
+        for i in (0..m).step_by(3) {
+            for j in (0..n).step_by(3) {
+                let mut freq_map = HashMap::new();
+                let q1 = &self.board[j][i..i+3];
+                let q2 = &self.board[j+1][i..i+3];
+                let q3 = &self.board[j+2][i..i+3];
+                let r = [q1, q2, q3];
+                for k in r {
+                    for l in k {
+                        if *l != 0 {
+                            let count = freq_map.entry(l).or_insert(0);
+                            *count += 1;
+                        }
+                    }
+                    for (_k, v) in &freq_map {
+                        if *v > 1 {return false}
+                    }
                 }
             }
-
-            for (_k, v) in freq_map {
-                if v > 1 {return false}
-            }
-
-            c += 3;
         }
 
-      
-
-
-        flag
+        true
     }
 
 }
