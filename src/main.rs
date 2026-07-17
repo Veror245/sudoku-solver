@@ -99,6 +99,7 @@ impl Sudoku {
         }
 
         true
+        //TODO: fix row and column check
     }
 
 }
