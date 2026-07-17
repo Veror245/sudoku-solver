@@ -26,7 +26,7 @@ fn main() {
 
     for i in 0..m {
         for j in 0..n {
-            print!("{} ",board[i][j]);
+            print!("{} ",sudoku.board[i][j]);
         }
         println!();
 
@@ -48,7 +48,7 @@ impl Sudoku {
 
     fn get_len(&self) -> (usize, usize) {
         let row_size = self.board.len();
-        let col_size = self.board.len();
+        let col_size = self.board[0].len();
 
         (row_size, col_size)
     }
