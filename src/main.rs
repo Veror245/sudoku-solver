@@ -2,7 +2,6 @@
 use std::{collections::HashMap};
 
 fn main() {
-    // let mut board: [[u8; 9]; 9] = [[0; 9]; 9];
 
     let board = [
         [0, 0, 0, 0, 7, 0, 0, 0, 6],
@@ -19,9 +18,6 @@ fn main() {
     let sudoku = Sudoku::new(board);
     println!("{}", sudoku.check_valid());
 
-    // let m = &sudoku.board.len(); // no of rows
-    // let n = &sudoku.board[0].len(); //no of columns in the first row
-
     let (m, n) = sudoku.get_len();
 
     for i in 0..m {
@@ -29,11 +25,6 @@ fn main() {
             print!("{} ",sudoku.board[i][j]);
         }
         println!();
-
-       }
-
-    for i in (1..9).rev() {
-        println!("{}", 27%i);
     }
     
 }
@@ -104,4 +95,28 @@ impl Sudoku {
         true
     }
 
+    fn solve(&mut self, i:usize, j:usize) -> bool {
+
+        let curr = self.board[i][j];
+        
+    
+        for v in curr+1..9 {
+            self.board[i][j] = v;
+            if self.check_valid() == false {
+                if v == 9 {
+                    self.solve(i-1, j-1);
+                }
+                else {
+                    continue;
+                }
+            }
+            else {
+                return true;
+            }
+
+        }
+        
+          
+        true
+    }
 }
