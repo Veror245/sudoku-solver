@@ -1,5 +1,5 @@
 
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap};
 
 fn main() {
     // let mut board: [[u8; 9]; 9] = [[0; 9]; 9];
@@ -60,20 +60,22 @@ impl Sudoku {
     fn check_valid(&self) -> bool {
         let (m, n) = self.get_len();
 
+       
         for i in 0..m{
-            for j in 0..n-1 {
-                if (self.board[i][j] == self.board[i][j+1]) && 
-                (self.board[i][j] != 0) 
-                {return false;}
-            }
-        }
-
-        for i in 0..m{
-            for j in 0..n-1 {
-                if (self.board[j][i] == self.board[j+1][i]) && 
-                (self.board[j][i] != 0) 
-                {return false}
-            }
+            let mut row_map = HashMap::new();
+            let mut col_map = HashMap::new();
+            for j in 0..n {
+                if self.board[i][j] != 0{
+                    let rc = row_map.entry(self.board[i][j]).or_insert(0);
+                    *rc += 1;
+                    if *rc > 1 {return false}
+                }
+                if self.board[j][i] != 0{
+                    let cc = col_map.entry(self.board[j][i]).or_insert(0);
+                    *cc += 1;
+                    if *cc > 1 {return  false}
+                }     
+            }  
         }
 
 
@@ -89,17 +91,17 @@ impl Sudoku {
                         if *l != 0 {
                             let count = freq_map.entry(l).or_insert(0);
                             *count += 1;
+                            match count {
+                                1 => continue,
+                                _ => return false
+                            }
                         }
-                    }
-                    for (_k, v) in &freq_map {
-                        if *v > 1 {return false}
                     }
                 }
             }
         }
 
         true
-        //TODO: fix row and column check
     }
 
 }
