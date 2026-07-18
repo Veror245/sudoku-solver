@@ -124,45 +124,33 @@ impl Sudoku {
 
     pub fn solve(&mut self) -> bool {
 
-        self.backtrack(0, 0, 0) 
+        self.backtrack(0, 0) 
     }
 
-    fn backtrack(&mut self, a:usize, b:usize, flag: u8) -> bool {
+    fn backtrack(&mut self, a:usize, b:usize) -> bool {
 
         if self.is_filled() == true && self.check_valid() == true {
             return true;
         }
+        else if self.is_filled() == true {
+            return false;
+        }
 
         let (m, n) = self.get_len();
 
-        let mut curr = self.board[a][b];
+        let curr = self.board[a][b];
 
         println!("");
         println!("BackTracked");
 
-        for i in a..m {
-        'inner: for j in b..n {
-                    if self.board[i][j] != 0 && flag == 0 {continue;}
-                    println!(" ");
-                    for v in curr+1..=9 {
-                        self.board[i][j] = v;
-                        print!("{} ", self.board[i][j]);
-                        if self.check_valid() == false && v == 9 {
-                            if j-1  >= 0 as usize {
-                                self.board[i][j] = 0;
-                                self.backtrack(i, j-1, 1);
-                            } else if j-1 < 0 as usize {
-                                self.board[i][j] = 0;
-                                self.backtrack(i-1, 8, 1);
-                            }    
-                        } else if self.check_valid() == false && v < 9 {
-                            continue;
-                        } else if self.check_valid() == true && v > 0 {
-                            //self.backtrack(a, b, 1);
-                            continue 'inner;
-                        }
-                    }
-                }
+        let e: isize = b as isize;
+
+        for v in curr+1..=9 {
+            self.board[a][b] = v;
+            println!("{}", self.board[a][b]);
+            if self.check_valid() == false {
+                if v < 9 {continue;}
+            }
         }
 
         true
