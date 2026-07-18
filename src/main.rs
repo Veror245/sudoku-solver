@@ -15,7 +15,7 @@ fn main() {
         [5, 0, 0, 0, 9, 0, 0, 0, 0]
     ];
 
-    let sudoku = Sudoku::new(board);
+    let mut sudoku = Sudoku::new(board);
     println!("{}", sudoku.check_valid());
 
     let (m, n) = sudoku.get_len();
@@ -26,29 +26,41 @@ fn main() {
         }
         println!();
     }
+
+    println!("--------------");
+    println!(" ");
+
+    if sudoku.solve() == true {
+        for i in 0..m {
+            for j in 0..n {
+                print!("{} ",sudoku.board[i][j]);
+            }
+            println!();
+        }
+    }
     
 }
 
 
 #[derive(Debug)]
-struct Sudoku {
+pub struct Sudoku {
     board: [[u8; 9]; 9],
     is_solved: bool
 }
 
 impl Sudoku {
-    fn new(board: [[u8; 9]; 9]) -> Self {
+    pub fn new(board: [[u8; 9]; 9]) -> Self {
         Self { board: board, is_solved: false }
     }
 
-    fn get_len(&self) -> (usize, usize) {
+    pub fn get_len(&self) -> (usize, usize) {
         let row_size = self.board.len();
         let col_size = self.board[0].len();
 
         (row_size, col_size)
     }
 
-    fn check_valid(&self) -> bool {
+    pub fn check_valid(&self) -> bool {
         let (m, n) = self.get_len();
 
        
@@ -95,28 +107,64 @@ impl Sudoku {
         true
     }
 
-    fn solve(&mut self, i:usize, j:usize) -> bool {
-
-        let curr = self.board[i][j];
+    fn is_filled(&self) -> bool {
         
-    
-        for v in curr+1..9 {
-            self.board[i][j] = v;
-            if self.check_valid() == false {
-                if v == 9 {
-                    self.solve(i-1, j-1);
-                }
-                else {
-                    continue;
-                }
-            }
-            else {
-                return true;
-            }
+        let (m, n) = self.get_len();
 
+        for i in 0..m {
+            for j in 0..n {
+                if self.board[i][j] == 0 {
+                    return false;
+                }
+            }
         }
-        
-          
+
         true
     }
+
+    pub fn solve(&mut self) -> bool {
+
+        self.backtrack(0, 0, 0) 
+    }
+
+    fn backtrack(&mut self, a:usize, b:usize, flag: u8) -> bool {
+
+        if self.is_filled() == true && self.check_valid() == true {
+            return true;
+        }
+
+        let (m, n) = self.get_len();
+
+        let mut curr = self.board[a][b];
+
+        println!("");
+        println!("BackTracked");
+
+        for i in a..m {
+        'inner: for j in b..n {
+                    if self.board[i][j] != 0 && flag == 0 {continue;}
+                    println!(" ");
+                    for v in curr+1..=9 {
+                        self.board[i][j] = v;
+                        print!("{} ", self.board[i][j]);
+                        if self.check_valid() == false && v == 9 {
+                            if j-1  >= 0 as usize {
+                                self.board[i][j] = 0;
+                                self.backtrack(i, j-1, 1);
+                            } else if j-1 < 0 as usize {
+                                self.board[i][j] = 0;
+                                self.backtrack(i-1, 8, 1);
+                            }    
+                        } else if self.check_valid() == false && v < 9 {
+                            continue;
+                        } else if self.check_valid() == true && v > 0 {
+                            //self.backtrack(a, b, 1);
+                            continue 'inner;
+                        }
+                    }
+                }
+        }
+
+        true
+    }   
 }
