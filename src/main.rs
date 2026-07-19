@@ -109,7 +109,7 @@ impl Sudoku {
         true
     }
 
-    fn is_filled(&self) -> bool {
+    fn _is_filled(&self) -> bool {
         
         let (m, n) = self.get_len();
 
@@ -141,11 +141,16 @@ impl Sudoku {
             if board[a][b] == 0 {
                 for v in curr+1..=9 {
                     self.board[a][b] = v;
-                    if self.check_valid() == false && v < 9 {continue;}
-                    else if self.check_valid() == false && v >=9 {
-                        self.board[a][b] = 0;
-                        return false;
+                    if self.check_valid() == false {
+                        if v < 9 {
+                            continue;
+                        }
+                        if v >=9 {
+                            self.board[a][b] = 0;
+                            return false;
+                        }
                     }
+                    
                     else {
                         if b+1 <= 8 {
                             if self.backtrack(a, b+1, board) == false {
