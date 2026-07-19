@@ -3,16 +3,16 @@ use std::{collections::HashMap};
 
 fn main() {
 
-    let board = [
-        [7, 0, 8, 5, 0, 1, 0, 0, 0],
-        [0, 0, 9, 0, 0, 0, 6, 1, 5],
-        [1, 0, 5, 0, 0, 0, 0, 8, 0],
-        [5, 0, 0, 0, 3, 0, 0, 0, 7],
-        [0, 0, 0, 1, 0, 2, 0, 0, 0],
-        [9 ,0, 0, 0, 8, 0, 0, 0, 1],
-        [0, 4, 0, 0, 0, 0, 9, 0, 2],
-        [0, 9, 3, 0, 0, 0, 1, 0, 0],
-        [0, 0, 0, 6, 0, 9, 4, 0, 8]
+  let board: [[u8; 9]; 9] = [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 9, 0, 0, 1, 0, 0, 3, 0],
+        [0, 0, 6, 0, 2, 0, 7, 0, 0],
+        [0, 0, 0, 3, 0, 4, 0, 0, 0],
+        [2, 1, 0, 0, 0, 0, 0, 9, 8],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 2, 5, 0, 6, 4, 0, 0],
+        [0, 8, 0, 0, 0, 0, 0, 1, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0]
     ];
 
     let mut sudoku = Sudoku::new(board);
@@ -135,7 +135,7 @@ impl Sudoku {
 
         let curr = self.board[a][b];
 
-        if (a, b) == (8,8) && self.check_valid() == true {
+        if (a, b) == (8,8) && self.check_valid() == true && self.board[a][b] != 0{
             return true;
         } else {
             if board[a][b] == 0 {
@@ -162,12 +162,23 @@ impl Sudoku {
                             }
                         }
                         else {
-                            if self.backtrack(a+1, 0, board) == false {
+                            if a+1 <= 8 {
+                                if self.backtrack(a+1, 0, board) == false {
                                 
                                 continue; 
-                            }else {
+                                }else {
+                                    
+                                    return true;
+                                }
+                            }
+                            else {
+                                if self.backtrack(a, 8, board) == false {
                                 
-                                return true;
+                                continue; 
+                                }else {
+                                    
+                                    return true;
+                                }
                             }
 
                         }
@@ -183,12 +194,23 @@ impl Sudoku {
                     }
                     else {return true;}
                 } else {
-                   
-                    if self.backtrack(a+1, 0, board) == false{
+
+                    if a+1 <= 8 {
+                        if self.backtrack(a+1, 0, board) == false{
                         
-                        return false
+                            return false
+                        }
+                        else {return true;}
                     }
-                    else {return true;}
+                    else {
+                        if self.backtrack(a, 8, board) == false{
+                        
+                            return false
+                        }
+                        else {return true;}
+                    }
+                   
+                    
                 }
             }
 
