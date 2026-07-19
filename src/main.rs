@@ -135,19 +135,12 @@ impl Sudoku {
 
         let curr = self.board[a][b];
 
-        println!("");
-        println!("BackTracked");
-        println!("Entered ({}, {})",a,b);
-        
-        
-
-        if self.is_filled() == true && self.check_valid() == true {
+        if (a, b) == (8,8) && self.check_valid() == true {
             return true;
         } else {
             if board[a][b] == 0 {
                 for v in curr+1..=9 {
                     self.board[a][b] = v;
-                    print!("{} ", self.board[a][b]);
                     if self.check_valid() == false && v < 9 {continue;}
                     else if self.check_valid() == false && v >=9 {
                         self.board[a][b] = 0;
@@ -155,21 +148,20 @@ impl Sudoku {
                     }
                     else {
                         if b+1 <= 8 {
-                            println!("Calling child ({}, {})", a, b+1);
                             if self.backtrack(a, b+1, board) == false {
-                                println!("child returned false at ({}, {})",a, b+1);
+                                
                                 continue;
                             } else {
-                                println!("child returned true at ({}, {})", a, b+1);
+                                
                                 return true;
                             }
                         }
                         else {
                             if self.backtrack(a+1, 0, board) == false {
-                                println!("child returned false at ({}, {})", a+1, b);
+                                
                                 continue; 
                             }else {
-                                println!("child returned true at ({}, {})", a+1, b);
+                                
                                 return true;
                             }
 
@@ -179,16 +171,16 @@ impl Sudoku {
                 }       
             } else {
                 if b+1 <= 8 {
-                    println!("Calling child ({}, {})", a, b+1);
+                    
                     if self.backtrack(a, b+1, board) == false {
-                        println!("Static Call");
+                        
                         return false;
                     }
                     else {return true;}
                 } else {
-                    println!("Calling child ({}, {})", a+1, b);
+                   
                     if self.backtrack(a+1, 0, board) == false{
-                        println!("New Row {a}, {b}");
+                        
                         return false
                     }
                     else {return true;}
@@ -196,7 +188,7 @@ impl Sudoku {
             }
 
         }
-    
+        self.board[a][b] = 0;
         false
     }   
 }
