@@ -131,17 +131,127 @@ impl Sudoku {
         self.is_solved 
     }
 
+    fn is_placement_valid(&self, a:usize, b:usize) -> bool {
+
+        let q1: &[u8];
+        let q2: &[u8];
+        let q3: &[u8];
+        
+        match (a, b) {
+            (0..3,0..3) => {
+                 q1 = &self.board[0][0..3];
+                 q2 = &self.board[1][0..3];
+                 q3 = &self.board[2][0..3];
+
+            }
+            (0..3,3..6) => {
+                 q1= &self.board[0][3..6];
+                 q2 = &self.board[1][3..6];
+                 q3 = &self.board[2][3..6];
+
+            }
+            (0..3, 6..9) => {
+                 q1= &self.board[0][6..9];
+                 q2 = &self.board[1][6..9];
+                 q3 = &self.board[2][6..9];
+            }
+            (3..6,0..3) => {
+                 q1 = &self.board[3][0..3];
+                 q2 = &self.board[4][0..3];
+                 q3 = &self.board[5][0..3];
+
+            }
+            (3..6,3..6) => {
+                 q1= &self.board[3][3..6];
+                 q2 = &self.board[4][3..6];
+                 q3 = &self.board[5][3..6];
+
+            }
+            (3..6, 6..9) => {
+                 q1= &self.board[3][6..9];
+                 q2 = &self.board[4][6..9];
+                 q3 = &self.board[5][6..9];
+            }
+            (6..9,0..3) => {
+                 q1 = &self.board[6][0..3];
+                 q2 = &self.board[7][0..3];
+                 q3 = &self.board[8][0..3];
+
+            }
+            (6..9,3..6) => {
+                 q1= &self.board[6][3..6];
+                 q2 = &self.board[7][3..6];
+                 q3 = &self.board[8][3..6];
+
+            }
+            (6..9, 6..9) => {
+                 q1= &self.board[6][6..9];
+                 q2 = &self.board[7][6..9];
+                 q3 = &self.board[8][6..9];
+            }
+            (_, _) => {
+                 q1= &self.board[6][6..9];
+                 q2 = &self.board[7][6..9];
+                 q3 = &self.board[8][6..9];
+            }
+           
+        }
+
+        let mut freq_map = HashMap::new();
+
+        let r = [q1, q2, q3];
+        for k in r {
+            for l in k {
+                if *l != 0 {
+                    let count = freq_map.entry(l).or_insert(0);
+                    *count += 1;
+                    match count {
+                        1 => continue,
+                        _ => return false
+                    }
+                }
+            }
+        }
+        let mut check = [false; 10];
+        for v in self.board[a] {
+            if v == 0 {
+                continue;
+            }
+            if check[v as usize] == true {
+                return false;
+            }
+            check[v as usize] = true;
+        }
+
+        let mut check = [false; 10];
+        for j in 0..9 {
+            let v = self.board[j][b];
+            if v == 0 {
+                continue;
+            }
+            if check[v as usize] == true {
+                return false;
+            }
+            check[v as usize] = true;
+        }
+        
+
+       
+        
+        true
+    }
+
     fn backtrack(&mut self, a:usize, b:usize, board: &[[u8; 9]; 9]) -> bool {
 
         let curr = self.board[a][b];
 
-        if (a, b) == (8,8) && self.check_valid() == true && self.board[a][b] != 0{
+        if (a, b) == (8,8) && self.is_placement_valid(a, b) == true && self.board[a][b] != 0{
             return true;
         } else {
             if board[a][b] == 0 {
                 for v in curr+1..=9 {
                     self.board[a][b] = v;
-                    if self.check_valid() == false {
+                    if self.is_placement_valid(a, b) == false {
                         if v < 9 {
                             continue;
                         }
