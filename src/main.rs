@@ -123,36 +123,58 @@ impl Sudoku {
     }
 
     pub fn solve(&mut self) -> bool {
-
-        self.backtrack(0, 0) 
+        
+        let board = self.board;
+        self.is_solved = self.backtrack(0, 0, &board);
+        self.is_solved 
     }
 
-    fn backtrack(&mut self, a:usize, b:usize) -> bool {
-
-        if self.is_filled() == true && self.check_valid() == true {
-            return true;
-        }
-        else if self.is_filled() == true {
-            return false;
-        }
-
-        let (m, n) = self.get_len();
+    fn backtrack(&mut self, a:usize, b:usize, board: &[[u8; 9]; 9]) -> bool {
 
         let curr = self.board[a][b];
 
         println!("");
         println!("BackTracked");
 
-        let e: isize = b as isize;
-
-        for v in curr+1..=9 {
-            self.board[a][b] = v;
-            println!("{}", self.board[a][b]);
-            if self.check_valid() == false {
-                if v < 9 {continue;}
+        if self.is_filled() == true && self.check_valid() == true {
+            return true;
+        } else if self.is_filled() == false && self.check_valid() == true {
+            if board[a][b] != 0 {
+                if b+1 > 8 {self.backtrack(a+1, 0, board);}
+                else {self.backtrack(a, b+1, board);}
             }
-        }
+            else {
+                if self.board[a][b] == 9 {
+                    if b == 0 {
+                        self.backtrack(a-1, 8, board);
+                    } else {
+                        self.backtrack(a, b-1, board);
+                    }
+                } else {
+                    for v in curr+1..=9 {
+                        self.board[a][b] = v;
+                        print!("{} ", self.board[a][b]);
+                        if self.check_valid() == false && v < 9 {continue;}
+                        else if self.check_valid() == false && v >= 9 {
+                            if b == 0{
+                                self.board[a][b] = 0;
+                                let boo = self.backtrack(a-1, 8, board);
+                            } else {
+                                self.board[a][b] = 0;
+                                let boo = self.backtrack(a, b-1, board);
+                            }
+                        } else if self.check_valid() == true {
+                            if b+1 > 8 {self.backtrack(a+1, 0, board);}
+                            else {self.backtrack(a, b+1, board);}
+                        }
+                    }
 
-        true
+                } 
+                
+            }
+            
+        }
+    
+        false
     }   
 }
