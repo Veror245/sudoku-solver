@@ -1,5 +1,5 @@
 
-use sudoku_solver::solver::Sudoku;
+use sudoku_solver::{solver::Sudoku, euler_parser::parse};
 
 fn main() {
 
@@ -40,7 +40,25 @@ fn main() {
             println!("--");
         }
     }
+
+    let mut three: i32 = 0;
+    let mut c = 0;
+
+    let res = parse("../data/sudoku.txt").unwrap();
+    for s in res.boards {
+        c += 1;
+        println!("Solving Sudoku number: {}", c);
+        let mut sudoku = Sudoku::new(s);
+        if sudoku.solve() == true {
+            three += (sudoku.board[0][0] as i32)*100 + (sudoku.board[0][1] as i32) * 10 + sudoku.board[0][2] as i32;
+            continue;
+        }
+    }
+
+    println!("final Sum: {}", three);
     
 }
+
+
 
 
