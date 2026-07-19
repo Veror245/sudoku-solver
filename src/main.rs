@@ -197,21 +197,22 @@ impl Sudoku {
            
         }
 
-        let mut freq_map = HashMap::new();
+        let mut check = [false; 10];
 
         let r = [q1, q2, q3];
         for k in r {
             for l in k {
-                if *l != 0 {
-                    let count = freq_map.entry(l).or_insert(0);
-                    *count += 1;
-                    match count {
-                        1 => continue,
-                        _ => return false
-                    }
+                if *l == 0 {
+                    continue;
                 }
+                let v = *l;
+                if check[v as usize] == true {
+                    return false;
+                }
+                check[v as usize] = true;
             }
         }
+        
         let mut check = [false; 10];
         for v in self.board[a] {
             if v == 0 {
