@@ -19,6 +19,13 @@ pub struct Cells {
     cells: Vec<Cell>
 }
 
+#[derive(Copy, Clone)]
+struct Change {
+    row: usize,
+    col: usize,
+    val: u8,
+}
+
 impl Cells {
     fn push_cell(&mut self, cell: Cell) {
         self.cells.push(cell);
@@ -308,7 +315,10 @@ impl Sudoku {
 
     }
 
-    fn update_neighbors(&self, a:usize, b:usize, val: u8, cells: &mut Cells) {
+    fn update_neighbors(&self, a:usize, b:usize, val: u8, cells: &mut Cells) -> [Change; 20] {
+
+        let mut changes: [Change; 20] = [Change{row:10, col:10, val:10}; 20];
+        let mut len = 0;
 
         for cell in &mut cells.cells {
             let (i, j) = cell.value;
@@ -317,6 +327,8 @@ impl Sudoku {
                     if cell.candidates[(val-1) as usize] != 0 {
                         cell.candidates[(val-1) as usize] = 0;
                         cell.len -= 1;
+                        changes[len] = Change { row: i, col: j, val: val };
+                        len += 1;
                     }
                     
                 }
@@ -324,19 +336,7 @@ impl Sudoku {
             }
         }
 
-        for cell in &mut cells.cells {
-            let (i, j) = cell.value;
-            if a==i || b==j || (i/3 == a/3 && j/3 == b/3) {
-                if !(a == i && b == j) {
-                    if cell.candidates[(val-1) as usize] == 0 {
-                        cell.candidates[(val-1) as usize] = val;
-                        cell.len += 1;
-                    }
-                    
-                }
-                
-            }
-        }
+        changes
 
         
         
@@ -379,14 +379,34 @@ impl Sudoku {
 
     fn opt_mrv(&mut self, cells: &mut Cells) -> bool{
 
-        for cell in &cells.cells {
-            let (a, b) = cell.value;
-            for v in cell.candidates {
-                self.board[a][b] = v;
-                
+        let i: usize;
+        let j: usize;
+        let candidates: [u8; 9];
+        self.recursive_calls += 1;
+
+        
+        (i, j, candidates) = self.get_min_candidate_count_better(cells);
+        //println!("Currently at: ({}, {})", i,j);
+        if i != 10 && j != 10 {
+            for v in candidates.iter().filter(|x| **x!= 0) {
+                self.board[i][j] = *v;
+                self.validity_checks += 1;
+                if self.mrv(cells) == false {
+                    self.board[i][j] = 0;
+                    continue;
+                } else{
+                    return true;
+                }    
             }
         }
-
+        else {
+            if self._is_filled() == true {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
 
         false
 
