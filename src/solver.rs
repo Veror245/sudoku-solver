@@ -9,6 +9,12 @@ pub struct Sudoku {
     pub validity_checks: u32
 }
 
+struct Cell {
+    value: u8,
+    candidates: [u8; 9],
+    len: usize,
+}
+
 impl Sudoku {
     pub fn new(board: [[u8; 9]; 9]) -> Self {
         Self { board: board, is_solved: false, recursive_calls: 0, validity_checks: 0 }
@@ -333,6 +339,33 @@ impl Sudoku {
 
         false
     }   
+
+    // fn get_candidates(&mut self, cell: Cell) -> Cell {
+    //     let board = self.board;
+
+    //     let (m, n) = self.get_len();
+    //     // let len = candidates.iter().filter(|x| **x != 0).collect();
+
+    //     let candidates = [0; 9];
+
+    //     for i in 0..m {
+    //         for j in 0..m {
+    //             for v in 1..=m {
+    //                 board[i][j] = v as u8;
+    //                 if self.is_placement_valid(i, j, &board) {
+    //                     candidates[v-1] = v as u8;
+    //                 }
+
+    //             }
+    //         }
+    //     }
+
+
+
+
+
+    //     Cell { value: v, candidates: candidates, len: 0 }
+    // }
 
 }
 
