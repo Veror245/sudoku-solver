@@ -286,4 +286,13 @@ impl Sudoku {
         self.board[a][b] = 0;
         false
     }   
+
+    fn get_candidate_count(&self) -> [[u8; 9]; 9] {
+
+        let count = [[0; 9]; 9];
+
+
+        count
+
+    }
 }
