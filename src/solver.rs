@@ -338,14 +338,17 @@ impl Sudoku {
 
     fn update_neighbors(&self, a:usize, b:usize, val: u8, cells: &mut Cells) {
 
-        let row_box_start = (a/3) * 3;
-        let col_box_start = (b/3) * 3;
-
         for cell in &mut cells.cells {
             let (i, j) = cell.value;
-            if a==i && b==j && (i/3 == a/3 && j/3 == b/3) {
-                cell.candidates[(val-1) as usize] = 0;
-                cell.len -= 1;
+            if a==i || b==j || (i/3 == a/3 && j/3 == b/3) {
+                if !(a == i && b == j) {
+                    if cell.candidates[(val-1) as usize] != 0 {
+                        cell.candidates[(val-1) as usize] = 0;
+                        cell.len -= 1;
+                    }
+                    
+                }
+                
             }
         }
         
