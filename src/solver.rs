@@ -93,66 +93,13 @@ impl Sudoku {
         let q1: &[u8];
         let q2: &[u8];
         let q3: &[u8];
-        
-        match (a, b) {
-            (0..3,0..3) => {
-                 q1 = &self.board[0][0..3];
-                 q2 = &self.board[1][0..3];
-                 q3 = &self.board[2][0..3];
 
-            }
-            (0..3,3..6) => {
-                 q1= &self.board[0][3..6];
-                 q2 = &self.board[1][3..6];
-                 q3 = &self.board[2][3..6];
+        let box_row_start = (a/3)*3;
+        let box_col_start =(b/3)*3;
 
-            }
-            (0..3, 6..9) => {
-                 q1= &self.board[0][6..9];
-                 q2 = &self.board[1][6..9];
-                 q3 = &self.board[2][6..9];
-            }
-            (3..6,0..3) => {
-                 q1 = &self.board[3][0..3];
-                 q2 = &self.board[4][0..3];
-                 q3 = &self.board[5][0..3];
-
-            }
-            (3..6,3..6) => {
-                 q1= &self.board[3][3..6];
-                 q2 = &self.board[4][3..6];
-                 q3 = &self.board[5][3..6];
-
-            }
-            (3..6, 6..9) => {
-                 q1= &self.board[3][6..9];
-                 q2 = &self.board[4][6..9];
-                 q3 = &self.board[5][6..9];
-            }
-            (6..9,0..3) => {
-                 q1 = &self.board[6][0..3];
-                 q2 = &self.board[7][0..3];
-                 q3 = &self.board[8][0..3];
-
-            }
-            (6..9,3..6) => {
-                 q1= &self.board[6][3..6];
-                 q2 = &self.board[7][3..6];
-                 q3 = &self.board[8][3..6];
-
-            }
-            (6..9, 6..9) => {
-                 q1= &self.board[6][6..9];
-                 q2 = &self.board[7][6..9];
-                 q3 = &self.board[8][6..9];
-            }
-            (_, _) => {
-                 q1= &self.board[6][6..9];
-                 q2 = &self.board[7][6..9];
-                 q3 = &self.board[8][6..9];
-            }
-           
-        }
+        q1 = &self.board[box_row_start][box_col_start..box_col_start+3];
+        q2 = &self.board[box_row_start+1][box_col_start..box_col_start+3];
+        q3 = &self.board[box_row_start+2][box_col_start..box_col_start+3];
 
         let mut check = [false; 10];
 
@@ -192,9 +139,6 @@ impl Sudoku {
             }
             check[v as usize] = true;
         }
-        
-
-       
         
         true
     }
