@@ -289,15 +289,20 @@ impl Sudoku {
 
     fn get_candidate_count(&self) -> [[u8; 9]; 9] {
 
-<<<<<<< HEAD
-        let count = [[0; 9]; 9];
-=======
         let count: [[u8; 9]; 9] = [[0; 9]; 9];
-        
->>>>>>> optimisation
 
+        let (m, n) = self.get_len();
+
+        for i in 0..m {
+            for j in 0..n {
+                for v in 0..m {
+
+                }
+            }
+        }
 
         count
 
     }
 }
+
