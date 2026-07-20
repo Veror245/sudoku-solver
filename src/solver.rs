@@ -88,7 +88,7 @@ impl Sudoku {
         self.is_solved 
     }
 
-    fn is_placement_valid(&self, a:usize, b:usize) -> bool {
+    fn is_placement_valid(&self, a:usize, b:usize, board: &[[u8; 9]; 9]) -> bool {
 
         let q1: &[u8];
         let q2: &[u8];
@@ -97,9 +97,9 @@ impl Sudoku {
         let box_row_start = (a/3)*3;
         let box_col_start =(b/3)*3;
 
-        q1 = &self.board[box_row_start][box_col_start..box_col_start+3];
-        q2 = &self.board[box_row_start+1][box_col_start..box_col_start+3];
-        q3 = &self.board[box_row_start+2][box_col_start..box_col_start+3];
+        q1 = &board[box_row_start][box_col_start..box_col_start+3];
+        q2 = &board[box_row_start+1][box_col_start..box_col_start+3];
+        q3 = &board[box_row_start+2][box_col_start..box_col_start+3];
 
         let mut check = [false; 10];
 
@@ -118,7 +118,7 @@ impl Sudoku {
         }
         
         let mut check = [false; 10];
-        for v in self.board[a] {
+        for v in board[a] {
             if v == 0 {
                 continue;
             }
@@ -130,7 +130,7 @@ impl Sudoku {
 
         let mut check = [false; 10];
         for j in 0..9 {
-            let v = self.board[j][b];
+            let v = board[j][b];
             if v == 0 {
                 continue;
             }
@@ -147,13 +147,13 @@ impl Sudoku {
 
         let curr = self.board[a][b];
 
-        if (a, b) == (8,8) && self.is_placement_valid(a, b) == true && self.board[a][b] != 0{
+        if (a, b) == (8,8) && self.is_placement_valid(a, b, &self.board) == true && self.board[a][b] != 0{
             return true;
         } else {
             if board[a][b] == 0 {
                 for v in curr+1..=9 {
                     self.board[a][b] = v;
-                    if self.is_placement_valid(a, b) == false {
+                    if self.is_placement_valid(a, b, &self.board) == false {
                         if v < 9 {
                             continue;
                         }
@@ -231,21 +231,46 @@ impl Sudoku {
         false
     }   
 
-    fn get_candidate_count(&self) -> [[u8; 9]; 9] {
+    fn get_min_candidate_count(&self) -> (usize, usize) {
 
-        let count: [[u8; 9]; 9] = [[0; 9]; 9];
+        let mut count: [[u8; 9]; 9] = [[0; 9]; 9];
+        let mut board= self.board;
 
         let (m, n) = self.get_len();
+        let mut min = count[0][0];
 
         for i in 0..m {
             for j in 0..n {
-                for v in 0..m {
+                if board[i][j] == 0 {
+                    for v in 1..=m {
+                        board[i][j] = v as u8;
+                        if self.is_placement_valid(i, j, &board) {
+                            count[i][j] += 1;
+                        }
+                    }
+                    if count[i][j] != 0 {
+                        min = count[i][j];
+                    }
+                    board[i][j] = 0;
+                } else {count[i][j] = 10;}
+               
+            }
+        }
 
+        
+        let mut a: usize = 0;
+        let mut b:usize = 0;
+
+        for i in 0..m {
+            for j in 0..n {
+                if count[i][j] <= min && count[i][j] != 10 && count[i][j] != 0 {
+                    (a, b) = (i, j);
+                    min = count[i][j];
                 }
             }
         }
 
-        count
+        (a, b)
 
     }
 }
