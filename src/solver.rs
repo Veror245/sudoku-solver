@@ -119,58 +119,31 @@ impl Sudoku {
         
     }
 
-    fn is_placement_valid(&self, a:usize, b:usize, board: &[[u8; 9]; 9]) -> bool {
+    fn is_placement_valid(&self, a:usize, b:usize, board: &[[u8; 9]; 9], val:u8) -> bool {
 
        
 
-        let q1: &[u8];
-        let q2: &[u8];
-        let q3: &[u8];
+        for i in 0..9 {
+            if board[a][i] == val && i != b {
+                return false;
+            }
+        }
 
-        let box_row_start = (a/3)*3;
-        let box_col_start =(b/3)*3;
+        for i in 0..9 {
+            if board[i][b] == val && i != a {
+                return false;
+            }
+        }
 
-        q1 = &board[box_row_start][box_col_start..box_col_start+3];
-        q2 = &board[box_row_start+1][box_col_start..box_col_start+3];
-        q3 = &board[box_row_start+2][box_col_start..box_col_start+3];
+        let sr = (a / 3) * 3;
+        let sc = (b / 3) * 3;
 
-        let mut check = [false; 10];
-
-        let r = [q1, q2, q3];
-        for k in r {
-            for l in k {
-                if *l == 0 {
-                    continue;
-                }
-                let v = *l;
-                if check[v as usize] == true {
+        for i in sr..sr+3 {
+            for j in sc..sc+3 {
+                if (i, j) != (a, b) && board[i][j] == val {
                     return false;
                 }
-                check[v as usize] = true;
             }
-        }
-        
-        let mut check = [false; 10];
-        for v in board[a] {
-            if v == 0 {
-                continue;
-            }
-            if check[v as usize] == true {
-                return false;
-            }
-            check[v as usize] = true;
-        }
-
-        let mut check = [false; 10];
-        for j in 0..9 {
-            let v = board[j][b];
-            if v == 0 {
-                continue;
-            }
-            if check[v as usize] == true {
-                return false;
-            }
-            check[v as usize] = true;
         }
         
         true
@@ -182,14 +155,14 @@ impl Sudoku {
         self.recursive_calls  += 1;
 
         self.validity_checks += 1;
-        if (a, b) == (8,8) && self.is_placement_valid(a, b, &self.board) == true && self.board[a][b] != 0{
+        if (a, b) == (8,8) && self.is_placement_valid(a, b, &self.board, self.board[a][b]) == true && self.board[a][b] != 0{
             return true;
         } else {
             if board[a][b] == 0 {
                 for v in curr+1..=9 {
                     self.board[a][b] = v;
                     self.validity_checks += 1;
-                    if self.is_placement_valid(a, b, &self.board) == false {
+                    if self.is_placement_valid(a, b, &self.board, self.board[a][b]) == false {
                         
                         if v < 9 {
                             continue;
@@ -289,8 +262,7 @@ impl Sudoku {
                     for v in 1..=m {
                         board[i][j] = v as u8;
                         self.validity_checks += 1;
-                        if self.is_placement_valid(i, j, &board) {
-                            
+                        if self.is_placement_valid(i, j, &board, board[i][j]) {
                             count += 1;
                             candidates[v-1] = v as u8;
                         }
@@ -351,6 +323,22 @@ impl Sudoku {
                 
             }
         }
+
+        for cell in &mut cells.cells {
+            let (i, j) = cell.value;
+            if a==i || b==j || (i/3 == a/3 && j/3 == b/3) {
+                if !(a == i && b == j) {
+                    if cell.candidates[(val-1) as usize] == 0 {
+                        cell.candidates[(val-1) as usize] = val;
+                        cell.len += 1;
+                    }
+                    
+                }
+                
+            }
+        }
+
+        
         
 
     }
@@ -363,7 +351,7 @@ impl Sudoku {
         self.recursive_calls += 1;
 
         
-        (i, j, candidates) = self.get_min_candidate_count_better(cells);
+        (i, j, candidates) = self.get_min_candidate_count();
         //println!("Currently at: ({}, {})", i,j);
         if i != 10 && j != 10 {
             for v in candidates.iter().filter(|x| **x!= 0) {
@@ -422,7 +410,7 @@ impl Sudoku {
                 if self.board[i][j] == 0 {
                     for v in 1..=m {
                     board[i][j] = v as u8;
-                    if self.is_placement_valid(i, j, &board) {
+                    if self.is_placement_valid(i, j, &board, board[i][j]) {
                         candidates[v-1] = v as u8;
                         count += 1;
                     }
