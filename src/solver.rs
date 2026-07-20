@@ -9,10 +9,20 @@ pub struct Sudoku {
     pub validity_checks: u32
 }
 
-struct Cell {
-    value: u8,
+pub struct Cell {
+    value: (usize, usize),
     candidates: [u8; 9],
     len: usize,
+}
+
+pub struct Cells {
+    cells: Vec<Cell>
+}
+
+impl Cells {
+    fn push_cell(&mut self, cell: Cell) {
+        self.cells.push(cell);
+    }
 }
 
 impl Sudoku {
@@ -96,7 +106,12 @@ impl Sudoku {
             self.is_solved = self.backtrack(0, 0, &board);
             return self.is_solved 
         } else if mode == "mrv" {
-            self.is_solved = self.mrv();
+            let mut cells = self.get_candidates();
+            self.is_solved = self.mrv(&mut cells);
+            return self.is_solved
+        } else if mode == "opt_mrv" {
+            let mut cells = self.get_candidates();
+            self.is_solved = self.opt_mrv(&mut cells);
             return self.is_solved
         }
         
@@ -301,7 +316,43 @@ impl Sudoku {
 
     }
 
-    fn mrv(&mut self) -> bool {
+    pub fn get_min_candidate_count_better(&mut self, cells: &Cells) -> (usize, usize, [u8; 9]) {
+
+        let c1 = cells.cells.iter().next().unwrap();
+        let mut min = c1.len;
+        let mut a: usize = 0;
+        let mut b: usize = 0;
+        let mut candidates:[u8; 9] = [0; 9];
+
+        for cell in &cells.cells {
+            if cell.len < min {
+                min = cell.len;
+                (a,b) = cell.value;
+                candidates = cell.candidates;
+            }
+            
+        }
+        (a, b, candidates)
+
+    }
+
+    fn update_neighbors(&self, a:usize, b:usize, val: u8, cells: &mut Cells) {
+
+        let row_box_start = (a/3) * 3;
+        let col_box_start = (b/3) * 3;
+
+        for cell in &mut cells.cells {
+            let (i, j) = cell.value;
+            if a==i && b==j && (i/3 == a/3 && j/3 == b/3) {
+                cell.candidates[(val-1) as usize] = 0;
+                cell.len -= 1;
+            }
+        }
+        
+
+    }
+
+    fn mrv(&mut self, cells: &mut Cells) -> bool {
 
         let i: usize;
         let j: usize;
@@ -309,13 +360,13 @@ impl Sudoku {
         self.recursive_calls += 1;
 
         
-        (i, j, candidates) = self.get_min_candidate_count();
+        (i, j, candidates) = self.get_min_candidate_count_better(cells);
         //println!("Currently at: ({}, {})", i,j);
         if i != 10 && j != 10 {
-            for v in candidates.iter().filter(|x| **x != 0) {
+            for v in candidates.iter().filter(|x| **x!= 0) {
                 self.board[i][j] = *v;
                 self.validity_checks += 1;
-                if self.mrv() == false {
+                if self.mrv(cells) == false {
                     self.board[i][j] = 0;
                     continue;
                 } else{
@@ -333,34 +384,58 @@ impl Sudoku {
         }
 
         false
-    }   
+    }  
 
-    // fn get_candidates(&mut self, cell: Cell) -> Cell {
-    //     let board = self.board;
+    fn opt_mrv(&mut self, cells: &mut Cells) -> bool{
 
-    //     let (m, n) = self.get_len();
-    //     // let len = candidates.iter().filter(|x| **x != 0).collect();
-
-    //     let candidates = [0; 9];
-
-    //     for i in 0..m {
-    //         for j in 0..m {
-    //             for v in 1..=m {
-    //                 board[i][j] = v as u8;
-    //                 if self.is_placement_valid(i, j, &board) {
-    //                     candidates[v-1] = v as u8;
-    //                 }
-
-    //             }
-    //         }
-    //     }
+        for cell in &cells.cells {
+            let (a, b) = cell.value;
+            for v in cell.candidates {
+                self.board[a][b] = v;
+                
+            }
+        }
 
 
+        false
 
+    } 
 
+    fn get_candidates(&mut self) -> Cells {
+        let mut board = self.board;
 
-    //     Cell { value: v, candidates: candidates, len: 0 }
-    // }
+        let (m, n) = self.get_len();
+        // let len = candidates.iter().filter(|x| **x != 0).collect();
+        let mut count = 0;
+
+        let mut candidates = [0; 9];
+        let mut cells_c = Cells{
+            cells : Vec::new()
+        };
+        
+
+        for i in 0..m {
+            for j in 0..n {
+                if self.board[i][j] == 0 {
+                    for v in 1..=m {
+                    board[i][j] = v as u8;
+                    if self.is_placement_valid(i, j, &board) {
+                        candidates[v-1] = v as u8;
+                        count += 1;
+                    }
+                }
+                let cell = Cell{value: (i, j) , candidates: candidates, len: count};
+                cells_c.cells.push(cell);
+                candidates = [0; 9];
+                count = 0;
+                board[i][j] = 0;
+                } else {continue;}
+                
+            }
+        }
+
+        cells_c
+    }
 
 }
 
