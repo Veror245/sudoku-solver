@@ -231,13 +231,17 @@ impl Sudoku {
         false
     }   
 
-    fn get_min_candidate_count(&self) -> (usize, usize) {
+    pub fn get_min_candidate_count(&self) -> (usize, usize) {
 
-        let mut count: [[u8; 9]; 9] = [[0; 9]; 9];
+        let mut count = 0;
         let mut board= self.board;
 
         let (m, n) = self.get_len();
-        let mut min = count[0][0];
+
+        let mut min = 10;
+
+        let mut a: usize = 10;
+        let mut b: usize = 10;
 
         for i in 0..m {
             for j in 0..n {
@@ -245,33 +249,23 @@ impl Sudoku {
                     for v in 1..=m {
                         board[i][j] = v as u8;
                         if self.is_placement_valid(i, j, &board) {
-                            count[i][j] += 1;
+                            count += 1;
                         }
                     }
-                    if count[i][j] != 0 {
-                        min = count[i][j];
+                    if count != 0 && count < min {
+                        min = count;
+                        (a, b) = (i, j);
                     }
+                    count = 0;
                     board[i][j] = 0;
-                } else {count[i][j] = 10;}
+                } else {continue;}
                
             }
         }
-
-        
-        let mut a: usize = 0;
-        let mut b:usize = 0;
-
-        for i in 0..m {
-            for j in 0..n {
-                if count[i][j] <= min && count[i][j] != 10 && count[i][j] != 0 {
-                    (a, b) = (i, j);
-                    min = count[i][j];
-                }
-            }
-        }
-
         (a, b)
 
     }
+
+    
 }
 

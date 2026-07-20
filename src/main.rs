@@ -4,7 +4,7 @@ use std::time::Instant;
 
 fn main() {
 
-  let _board: [[u8; 9]; 9] = [
+  let board: [[u8; 9]; 9] = [
         [0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 9, 0, 0, 1, 0, 0, 3, 0],
         [0, 0, 6, 0, 2, 0, 7, 0, 0],
@@ -16,12 +16,15 @@ fn main() {
         [0, 0, 0, 0, 0, 0, 0, 0, 0]
     ];
 
-    let mut board = [[0; 9]; 9];
-    board[8][0] = 1;
-    board[8][2] = 2;
+    
+
+    // let mut board = [[0; 9]; 9];
+    // board[8][0] = 1;
+    // board[8][2] = 2;
 
     let mut sudoku = Sudoku::new(board);
     println!("{}", sudoku.check_valid());
+    println!("{:?}", sudoku.get_min_candidate_count());
 
     let (m, n) = sudoku.get_len();
 
@@ -49,6 +52,8 @@ fn main() {
     println!("Time taken to solve normal sudoku: {:?}", start.elapsed());
 
     euler_solve();
+
+    
     
     
 }
