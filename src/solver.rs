@@ -4,12 +4,14 @@ use std::collections::HashMap;
 #[derive(Debug)]
 pub struct Sudoku {
     pub board: [[u8; 9]; 9],
-    pub is_solved: bool
+    pub is_solved: bool,
+    pub recursive_calls: u32,
+    pub validity_checks: u32
 }
 
 impl Sudoku {
     pub fn new(board: [[u8; 9]; 9]) -> Self {
-        Self { board: board, is_solved: false }
+        Self { board: board, is_solved: false, recursive_calls: 0, validity_checks: 0 }
     }
 
     pub fn get_len(&self) -> (usize, usize) {
@@ -81,14 +83,24 @@ impl Sudoku {
         true
     }
 
-    pub fn solve(&mut self) -> bool {
+    pub fn solve(&mut self, mode: &str) -> bool {
+
+        if mode == "bt" {
+            let board = self.board;
+            self.is_solved = self.backtrack(0, 0, &board);
+            return self.is_solved 
+        } else if mode == "mrv" {
+            self.is_solved = self.mrv();
+            return self.is_solved
+        }
         
-        let board = self.board;
-        self.is_solved = self.backtrack(0, 0, &board);
-        self.is_solved 
+       false
+        
     }
 
     fn is_placement_valid(&self, a:usize, b:usize, board: &[[u8; 9]; 9]) -> bool {
+
+       
 
         let q1: &[u8];
         let q2: &[u8];
@@ -146,14 +158,18 @@ impl Sudoku {
     fn backtrack(&mut self, a:usize, b:usize, board: &[[u8; 9]; 9]) -> bool {
 
         let curr = self.board[a][b];
+        self.recursive_calls  += 1;
 
+        self.validity_checks += 1;
         if (a, b) == (8,8) && self.is_placement_valid(a, b, &self.board) == true && self.board[a][b] != 0{
             return true;
         } else {
             if board[a][b] == 0 {
                 for v in curr+1..=9 {
                     self.board[a][b] = v;
+                    self.validity_checks += 1;
                     if self.is_placement_valid(a, b, &self.board) == false {
+                        
                         if v < 9 {
                             continue;
                         }
@@ -231,7 +247,7 @@ impl Sudoku {
         false
     }   
 
-    pub fn get_min_candidate_count(&self) -> (usize, usize) {
+    pub fn get_min_candidate_count(&mut self) -> (usize, usize) {
 
         let mut count = 0;
         let mut board= self.board;
@@ -248,13 +264,20 @@ impl Sudoku {
                 if board[i][j] == 0 {
                     for v in 1..=m {
                         board[i][j] = v as u8;
+                        self.validity_checks += 1;
                         if self.is_placement_valid(i, j, &board) {
+                            
                             count += 1;
+                        }
+                        if count > min {
+                            break;
                         }
                     }
                     if count != 0 && count < min {
                         min = count;
                         (a, b) = (i, j);
+                    } if count == 1 {
+                        return (a, b);
                     }
                     count = 0;
                     board[i][j] = 0;
@@ -266,6 +289,50 @@ impl Sudoku {
 
     }
 
-    
+    fn mrv(&mut self) -> bool {
+
+        let i: usize;
+        let j: usize;
+        self.recursive_calls += 1;
+
+        
+        (i, j) = self.get_min_candidate_count();
+        //println!("Currently at: ({}, {})", i,j);
+        if i != 10 && j != 10 {
+            let curr = self.board[i][j];
+            for v in curr+1..=9 {
+                self.board[i][j] = v;
+                self.validity_checks += 1;
+                if self.is_placement_valid(i, j, &self.board) == false {
+                    
+                    if v < 9 {
+                        continue;
+                    } 
+                    else {
+                        self.board[i][j] = 0;
+                        return false;
+                    }
+                } else {
+                    if self.mrv() == false {
+                        self.board[i][j] = 0;
+                        continue;
+                    } else {
+                        return true;
+                    }
+                }
+            }
+        }
+        else {
+            if self._is_filled() == true {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+
+        false
+    }   
+
 }
 
