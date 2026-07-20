@@ -253,7 +253,7 @@ impl Sudoku {
         false
     }   
 
-    pub fn get_min_candidate_count(&mut self) -> (usize, usize) {
+    pub fn get_min_candidate_count(&mut self) -> (usize, usize, [u8; 9]) {
 
         let mut count = 0;
         let mut board= self.board;
@@ -265,6 +265,9 @@ impl Sudoku {
         let mut a: usize = 10;
         let mut b: usize = 10;
 
+        let mut candidates:[u8; 9] = [0; 9];
+        let mut best_cands :[u8; 9] = [0; 9];
+
         for i in 0..m {
             for j in 0..n {
                 if board[i][j] == 0 {
@@ -274,6 +277,7 @@ impl Sudoku {
                         if self.is_placement_valid(i, j, &board) {
                             
                             count += 1;
+                            candidates[v-1] = v as u8;
                         }
                         if count > min {
                             break;
@@ -282,16 +286,18 @@ impl Sudoku {
                     if count != 0 && count < min {
                         min = count;
                         (a, b) = (i, j);
+                        best_cands = candidates.clone();
                     } if count == 1 {
-                        return (a, b);
+                        return (a, b, best_cands);
                     }
                     count = 0;
+                    candidates = [0; 9];
                     board[i][j] = 0;
                 } else {continue;}
                
             }
         }
-        (a, b)
+        (a, b, best_cands)
 
     }
 
@@ -299,33 +305,22 @@ impl Sudoku {
 
         let i: usize;
         let j: usize;
+        let candidates: [u8; 9];
         self.recursive_calls += 1;
 
         
-        (i, j) = self.get_min_candidate_count();
+        (i, j, candidates) = self.get_min_candidate_count();
         //println!("Currently at: ({}, {})", i,j);
         if i != 10 && j != 10 {
-            let curr = self.board[i][j];
-            for v in curr+1..=9 {
-                self.board[i][j] = v;
+            for v in candidates.iter().filter(|x| **x != 0) {
+                self.board[i][j] = *v;
                 self.validity_checks += 1;
-                if self.is_placement_valid(i, j, &self.board) == false {
-                    
-                    if v < 9 {
-                        continue;
-                    } 
-                    else {
-                        self.board[i][j] = 0;
-                        return false;
-                    }
-                } else {
-                    if self.mrv() == false {
-                        self.board[i][j] = 0;
-                        continue;
-                    } else {
-                        return true;
-                    }
-                }
+                if self.mrv() == false {
+                    self.board[i][j] = 0;
+                    continue;
+                } else{
+                    return true;
+                }    
             }
         }
         else {
