@@ -289,7 +289,12 @@ impl Sudoku {
 
     fn get_candidate_count(&self) -> [[u8; 9]; 9] {
 
+<<<<<<< HEAD
         let count = [[0; 9]; 9];
+=======
+        let count: [[u8; 9]; 9] = [[0; 9]; 9];
+        
+>>>>>>> optimisation
 
 
         count
