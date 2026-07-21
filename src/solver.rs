@@ -298,9 +298,10 @@ impl Sudoku {
 
         let c1 = cells.cells.iter().next().unwrap();
         let mut min = c1.len;
-        let mut a: usize = 0;
-        let mut b: usize = 0;
-        let mut candidates:[u8; 9] = [0; 9];
+        let mut a: usize;
+        let mut b: usize;
+        (a,b) = c1.value;
+        let mut candidates:[u8; 9] = c1.candidates;
 
         for cell in &cells.cells {
             if cell.len < min {
@@ -314,12 +315,13 @@ impl Sudoku {
 
     }
 
-    fn update_neighbors(&self, a:usize, b:usize, val: u8, cells: &mut Cells) -> [Change; 20] {
+    fn update_neighbors(&self, a:usize, b:usize, val: u8, cells: &mut Cells) -> ([Change; 20], Cell) {
 
         let mut changes: [Change; 20] = [Change{row:10, col:10, val:10}; 20];
         let mut len = 0;
+        let mut idx_r = 0;
 
-        for cell in &mut cells.cells {
+        for (idx, cell) in &mut cells.cells.iter_mut().enumerate() {
             let (i, j) = cell.value;
             if a==i || b==j || (i/3 == a/3 && j/3 == b/3) {
                 if !(a == i && b == j) {
@@ -332,17 +334,19 @@ impl Sudoku {
                     
                 }
                 else {
-                    cell.len = 10;
+                    idx_r = idx;
                 }
                 
             }
         }
 
-        changes
+        let cell = cells.cells.swap_remove(idx_r);
+
+        (changes, cell)
 
     }
 
-    fn restore_neighbors(&self, changes: &mut [Change; 20], cells: &mut Cells) {
+    fn restore_neighbors(&self, changes: &mut [Change; 20], cells: &mut Cells, cell: Cell) {
         for change in changes {
             if change.row != 10 && change.col != 10 {
                 let (crow, ccol) = (change.row, change.col);
@@ -358,6 +362,8 @@ impl Sudoku {
             }
             
         }
+
+        cells.cells.push(cell);
 
         
         
@@ -405,16 +411,22 @@ impl Sudoku {
         self.recursive_calls += 1;
 
         
-        (i, j, candidates) = self.get_min_candidate_count_better(cells);
-        println!("Currently at: ({}, {})", i,j);
-        if self._is_filled() == false {
+        
+        if cells.cells.len() != 0 {
+            (i, j, candidates) = self.get_min_candidate_count_better(cells);
+            //println!("Currently at: ({}, {})", i,j);
+            let mut cands = candidates.iter().filter(|x| **x!= 0);
+            if cands.next() == None{
+                return false;
+            }
             for v in candidates.iter().filter(|x| **x!= 0) {
                 self.board[i][j] = *v;
-                let mut changes = self.update_neighbors(i, j, *v, cells);
+                let (mut changes, cell) = self.update_neighbors(i, j, *v, cells);
+                //println!("Remaining cells: {}", cells.cells.len());
                 self.validity_checks += 1;
                 if self.opt_mrv(cells) == false {
                     self.board[i][j] = 0;
-                    self.restore_neighbors(&mut changes, cells);
+                    self.restore_neighbors(&mut changes, cells, cell);
                     continue;
                 } else{
                     return true;
@@ -422,6 +434,7 @@ impl Sudoku {
             }
         }
         else {
+            //println!("Solved");
            return true;
         }
 
@@ -435,10 +448,11 @@ impl Sudoku {
         let (m, n) = self.get_len();
         // let len = candidates.iter().filter(|x| **x != 0).collect();
         let mut count = 0;
+        //let mut index: usize = 0;
 
         let mut candidates = [0; 9];
         let mut cells_c = Cells{
-            cells : Vec::new()
+            cells : Vec::new(),
         };
         
 
@@ -454,6 +468,7 @@ impl Sudoku {
                 }
                 let cell = Cell{value: (i, j) , candidates: candidates, len: count};
                 cells_c.cells.push(cell);
+                // index += 1;
                 candidates = [0; 9];
                 count = 0;
                 board[i][j] = 0;
