@@ -294,7 +294,7 @@ impl Sudoku {
 
     }
 
-    pub fn get_min_candidate_count_better(&mut self, cells: &Cells) -> (usize, usize, [u8; 9]) {
+    pub fn get_min_candidate_count_better(&mut self, cells: &Cells) -> (usize, usize, [u8; 9], usize) {
 
         let c1 = cells.cells.iter().next().unwrap();
         let mut min = c1.len;
@@ -311,7 +311,7 @@ impl Sudoku {
             }
             
         }
-        (a, b, candidates)
+        (a, b, candidates, min)
 
     }
 
@@ -408,15 +408,16 @@ impl Sudoku {
         let i: usize;
         let j: usize;
         let candidates: [u8; 9];
+        let len:usize;
         self.recursive_calls += 1;
 
         
         
         if cells.cells.len() != 0 {
-            (i, j, candidates) = self.get_min_candidate_count_better(cells);
+            (i, j, candidates, len) = self.get_min_candidate_count_better(cells);
             //println!("Currently at: ({}, {})", i,j);
-            let mut cands = candidates.iter().filter(|x| **x!= 0);
-            if cands.next() == None{
+            //let mut cands = candidates.iter().filter(|x| **x!= 0);
+            if len == 0{
                 return false;
             }
             for v in candidates.iter().filter(|x| **x!= 0) {
