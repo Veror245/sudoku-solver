@@ -83,7 +83,7 @@ fn main() {
 
 
     let start = Instant::now();
-    if sudoku.solve("mrv") == true {
+    if sudoku.solve("opt_mrv") == true {
         // println!("");
         // for i in 0..m {
         //     for j in 0..n {
@@ -93,11 +93,11 @@ fn main() {
         //     println!("--");
         // }
     }
-    println!("Time taken to solve normal sudoku with mrv: {:?} with {} calls with {} validity_checks", start.elapsed(), 
+    println!("Time taken to solve normal sudoku with optimsed mrv: {:?} with {} calls with {} validity_checks", start.elapsed(), 
     sudoku.recursive_calls, sudoku.validity_checks);
 
     euler_solve("bt");
-    euler_solve("mrv");
+    euler_solve("opt_mrv");
 
     
     
@@ -132,7 +132,7 @@ fn euler_solve(mode: &str) {
         for s in res.boards {
             //c += 1;
             let mut sudoku = Sudoku::new(s);
-            if sudoku.solve("mrv") == true {
+            if sudoku.solve("opt_mrv") == true {
                 three += (sudoku.board[0][0] as i32)*100 + (sudoku.board[0][1] as i32) * 10 + sudoku.board[0][2] as i32;
                 continue;
             }

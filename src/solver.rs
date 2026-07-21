@@ -113,8 +113,7 @@ impl Sudoku {
             self.is_solved = self.backtrack(0, 0, &board);
             return self.is_solved 
         } else if mode == "mrv" {
-            let mut cells = self.get_candidates();
-            self.is_solved = self.mrv(&mut cells);
+            self.is_solved = self.mrv();
             return self.is_solved
         } else if mode == "opt_mrv" {
             let mut cells = self.get_candidates();
@@ -332,18 +331,39 @@ impl Sudoku {
                     }
                     
                 }
+                else {
+                    cell.len = 10;
+                }
                 
             }
         }
 
         changes
 
-        
-        
-
     }
 
-    fn mrv(&mut self, cells: &mut Cells) -> bool {
+    fn restore_neighbors(&self, changes: &mut [Change; 20], cells: &mut Cells) {
+        for change in changes {
+            if change.row != 10 && change.col != 10 {
+                let (crow, ccol) = (change.row, change.col);
+                for cell in &mut cells.cells {
+                    let (cellrow, cellcol) = cell.value;
+                    if  cellrow == crow && cellcol == ccol {
+                        if cell.candidates[change.val as usize-1] == 0 {
+                            cell.candidates[change.val as usize-1] = change.val;
+                            cell.len += 1;
+                        }
+                    }
+                }
+            }
+            
+        }
+
+        
+        
+    }
+
+    fn mrv(&mut self) -> bool {
 
         let i: usize;
         let j: usize;
@@ -357,7 +377,7 @@ impl Sudoku {
             for v in candidates.iter().filter(|x| **x!= 0) {
                 self.board[i][j] = *v;
                 self.validity_checks += 1;
-                if self.mrv(cells) == false {
+                if self.mrv() == false {
                     self.board[i][j] = 0;
                     continue;
                 } else{
@@ -386,13 +406,15 @@ impl Sudoku {
 
         
         (i, j, candidates) = self.get_min_candidate_count_better(cells);
-        //println!("Currently at: ({}, {})", i,j);
-        if i != 10 && j != 10 {
+        println!("Currently at: ({}, {})", i,j);
+        if self._is_filled() == false {
             for v in candidates.iter().filter(|x| **x!= 0) {
                 self.board[i][j] = *v;
+                let mut changes = self.update_neighbors(i, j, *v, cells);
                 self.validity_checks += 1;
-                if self.mrv(cells) == false {
+                if self.opt_mrv(cells) == false {
                     self.board[i][j] = 0;
+                    self.restore_neighbors(&mut changes, cells);
                     continue;
                 } else{
                     return true;
@@ -400,12 +422,7 @@ impl Sudoku {
             }
         }
         else {
-            if self._is_filled() == true {
-                return true;
-            }
-            else {
-                return false;
-            }
+           return true;
         }
 
         false
