@@ -152,7 +152,12 @@ impl Solver {
 
     }
 
-    fn update_state(&self) {
+    fn update_state(&self, idx: usize, candidate: u8) { //update row mask, col mask, box mask, candidate map, candidate bucket len
+        
+        let row = idx / 9;
+        let col = idx % 9;
+        let box_idx = (row / 3) * 3 + col / 3;     
+
 
     }
 
@@ -163,9 +168,15 @@ impl Solver {
     fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 
         let min_idx = self.get_min_candidate_idx();
+        let row = min_idx / 9;
+        let col = min_idx % 9;
+        let box_idx = (row / 3) * 3 + col / 3;  
 
         if min_idx != 81 {
             let candidates = self.get_candidates(min_idx);
+            let trailing_zeroes = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
+
+
 
         } else {
             return true

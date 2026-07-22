@@ -16,7 +16,11 @@ fn main() {
 
     //insert 2 into row 1
     row_mask[0]  |= 1<<2-1;
-    println!("{:016b}", row_mask[0]); 
+    println!("{:016b}", row_mask[0]);
+
+    let a: u16 = 4;
+    println!("{:08b}", a); 
+    println!("{:08b}", a >> a.trailing_zeros()); 
 
     //check if 5 is present
     if (row_mask[0] & (1<<5-1)) == (1<<5-1){ //one way
@@ -124,7 +128,7 @@ fn main() {
 //     euler_solve("bt");
 //     euler_solve("opt_mrv");
 
-        benchmark(100);
+        // benchmark(100);
 
     
     
