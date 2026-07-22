@@ -135,8 +135,20 @@ impl Solver {
         (self.box_mask[box_idx] & (1 << candidate) != 0)
     }
 
-    fn get_min_candidate_idx(&self) {
+    fn get_min_candidate_idx(&self) -> usize {
 
+        let mut idx: usize = 0;
+        
+        for i in 1..=9 {
+            if self.bucket_len[i] > 0 {
+                idx = self.candidate_bucket[i][0];
+                return idx
+            }
+            
+        }
+
+
+        81
 
     }
 
