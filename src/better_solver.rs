@@ -165,7 +165,7 @@ impl Solver {
         let min_idx = self.get_min_candidate_idx();
 
         if min_idx != 81 {
-            let candidates = self.get_candidates(min_idx)
+            let candidates = self.get_candidates(min_idx);
 
         } else {
             return true
