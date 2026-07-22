@@ -154,11 +154,13 @@ impl Solver {
 
     fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 
-        // if self.get_candidates_count() > 0 {
+        let min_idx = self.get_min_candidate_idx();
 
-        // } else {
-        //     return false
-        // }
+        if min_idx != 81 {
+
+        } else {
+            return true
+        }
 
         false
 
