@@ -5,6 +5,30 @@ use std::fs;
 
 fn main() {
 
+    let val:u16 = 1 << 6;
+    println!("{:08b}", val);
+
+    let mut row_mask:[u16; 9] = [0u16; 9];
+
+    //insert 5 into row 1
+    row_mask[0] |= 1<< 5-1;
+    println!("{:016b}", row_mask[0]); 
+
+    //insert 2 into row 1
+    row_mask[0]  |= 1<<2-1;
+    println!("{:016b}", row_mask[0]); 
+
+    //check if 5 is present
+    if (row_mask[0] & (1<<5-1)) == (1<<5-1){ //one way
+        println!("5 is present");
+    }
+
+     if (row_mask[0] & (1<<5-1)) != 0{ //another way
+        println!("5 is present");
+    }
+
+
+
 //     let board: [[u8; 9]; 9] = [
 //         [0, 0, 0, 0, 0, 0, 0, 0, 0],
 //         [0, 9, 0, 0, 1, 0, 0, 3, 0],
@@ -100,37 +124,8 @@ fn main() {
 //     euler_solve("bt");
 //     euler_solve("opt_mrv");
 
-    let boards = load_data();
-    let start = Instant::now();
+        benchmark(100);
 
-    for board in &boards[..100] {
-        let mut sudoku = Sudoku::new(*board);
-        sudoku.solve("bt");
-    }
-
-    println!("Backtracking 100 puzzles took {:?}", start.elapsed());
-
-
-    let boards = load_data();
-    let start = Instant::now();
-
-    for board in &boards[..100] {
-        let mut sudoku = Sudoku::new(*board);
-        sudoku.solve("mrv");
-    }
-
-    println!("Mrv 100 puzzles took {:?}", start.elapsed());
-
-
-    let boards = load_data();
-    let start = Instant::now();
-
-    for board in &boards[..100] {
-        let mut sudoku = Sudoku::new(*board);
-        sudoku.solve("opt_mrv");
-    }
-
-    println!("Optimised Mrv 100 puzzles took {:?}", start.elapsed());
     
     
 }
@@ -209,4 +204,48 @@ fn load_data() -> Vec<[[u8; 9]; 9]> {
     println!("Loaded {} puzzles", boards.len());
 
     boards
+}
+
+fn benchmark(n:usize) {
+    let boards = load_data();
+    let start = Instant::now();
+
+    for board in &boards[..n] {
+        let mut sudoku = Sudoku::new(*board);
+        sudoku.solve("bt");
+    }
+
+    let end = start.elapsed();
+    println!("Backtracking {n} puzzles took {:?}", start.elapsed());
+    let puzzles = n as f32 / end.as_secs_f32();
+    println!("Speed: {}/sec", puzzles);
+
+
+    let boards = load_data();
+    let start = Instant::now();
+
+    for board in &boards[..n] {
+        let mut sudoku = Sudoku::new(*board);
+        sudoku.solve("mrv");
+    }
+
+    let end = start.elapsed();
+    println!("Mrv {n} puzzles took {:?}", end);
+    let puzzles = n as f32 / end.as_secs_f32();
+    println!("Speed: {}/sec", puzzles);
+
+
+    let boards = load_data();
+    let start = Instant::now();
+
+    for board in &boards[..n] {
+        let mut sudoku = Sudoku::new(*board);
+        sudoku.solve("opt_mrv");
+    }
+
+    let end = start.elapsed();
+    println!("Optimised Mrv {n} puzzles took {:?}", start.elapsed());
+    let puzzles = n as f32 / end.as_secs_f32();
+    println!("Speed: {}/sec", puzzles);
+    
 }
