@@ -102,8 +102,21 @@ impl Solver {
         let col = idx % 9;
         let box_idx = (row / 3) * 3 + col / 3;
 
-        
+        self.row_mask[row] ^= 1 << candidate; 
+        self.col_mask[col] ^= 1 << candidate; 
+        self.box_mask[box_idx] ^= 1 << candidate; 
 
+    }
+
+    fn check_if_present(&self, candidate: u8, idx: usize) -> bool {
+
+        let row = idx / 9;
+        let col = idx % 9;
+        let box_idx = (row / 3) * 3 + col / 3;        
+
+        (self.row_mask[row] & (1<<candidate) != 0) || 
+        (self.col_mask[col] & (1<<candidate) != 0) || 
+        (self.box_mask[box_idx] & (1 << candidate) != 0)
     }
 
 
