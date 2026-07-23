@@ -1,6 +1,5 @@
 
-use sudoku_solver::{solver::Sudoku, euler_parser::parse};
-use sudoku_solver::better_solver::Solver;
+use sudoku_solver::{solver::Sudoku, euler_parser::parse, better_solver::Solver};
 use std::time::Instant;
 use std::fs;
 
@@ -158,7 +157,7 @@ fn euler_solve(mode: &str) {
 
         println!("final Sum: {}", three);
 
-    } else {
+    } else if mode == "opt_mrv" {
         let start = Instant::now();
         for s in res.boards {
             //c += 1;
@@ -171,6 +170,20 @@ fn euler_solve(mode: &str) {
         println!("Time taken to solve eulers 96 50 sudokus with mrv: {:?}", start.elapsed());
 
         println!("final Sum: {}", three);
+    } else if mode == "bit_mrv" {
+        let start = Instant::now();
+        for s in res.boards {
+            //c += 1;
+            let mut sudoku = Solver::new(s.iter().flatten().copied().collect());
+            if sudoku.solve() == true {
+                three += (sudoku.board[0] as i32)*100 + (sudoku.board[9] as i32) * 10 + sudoku.board[18] as i32;
+                continue;
+            }
+        }
+        println!("Time taken to solve eulers 96 50 sudokus with mrv: {:?}", start.elapsed());
+
+        println!("final Sum: {}", three);
+
     }
     
 

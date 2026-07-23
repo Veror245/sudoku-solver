@@ -1,3 +1,5 @@
+use std::mem::transmute;
+
 pub struct Solver {
     pub board: [u8; 81],
 
@@ -6,9 +8,9 @@ pub struct Solver {
     box_mask: [u16; 9],
     
     neighbors: [[u8; 20]; 81], 
-    candidate_bucket: [[usize; 81]; 10],
-    bucket_len: [usize; 10],
-    bucket_pos: [usize; 81]
+    candidate_bucket: [[usize; 81]; 10], //actual candidate buckets containing rows as candidate counr and cols as the indexes
+    bucket_len: [usize; 10], //bucket length of each group of candidate counts
+    bucket_pos: [usize; 81] //position of each cell in the candidate bucker column
 
 }
 
@@ -157,7 +159,7 @@ impl Solver {
 
     }
 
-    fn update_state(&mut self, idx: usize, candidate: u8) { //update row mask, col mask, box mask, candidate map, candidate bucket len
+    fn update_state(&mut self, idx: usize, candidate: u8) -> ([u8; 20], usize) { //update row mask, col mask, box mask, candidate map, candidate bucket len
         /*candidate_bucket: [[usize; 81]; 10],
             bucket_len: [usize; 10] */
 
@@ -210,12 +212,43 @@ impl Solver {
             self.bucket_len[neighbor_cc as usize] += 1;    
         }
 
-
+        (affected_neighbors, affected_len)
 
     }
 
-    fn restore_state(&self) {
+    fn restore_state(&mut self, affected_neighbors: [u8; 20], affected_len: usize, idx: usize, candidate: u8) {
+
         
+
+        for i in 0..affected_len {
+            let n = affected_neighbors[i] as usize;
+            let candidate_count = self.get_candidates_count( n) as usize;
+            let last_index = self.bucket_len[candidate_count as usize] - 1;
+            println!("Removing {}", n);
+            //remove
+            self.candidate_bucket[candidate_count as usize][self.bucket_pos[n as usize]] = self.candidate_bucket[candidate_count as usize][last_index]; // the last cell index in the candidate bucket
+            self.bucket_pos[self.candidate_bucket[candidate_count as usize][last_index]] = self.bucket_pos[n as usize]; // changing the bucket pos of the cell index
+            self.bucket_pos[n as usize] = 100;
+            self.bucket_len[candidate_count as usize] -= 1;
+        }
+
+        self._remove_candidate_from_masks(candidate, idx);
+        self.board[idx] = 0;
+
+        let candidate_count = self.get_candidates_count(idx) as usize;
+
+        self.candidate_bucket[candidate_count][self.bucket_len[candidate_count]] = idx;
+        self.bucket_pos[idx] = self.bucket_len[candidate_count];
+        self.bucket_len[candidate_count] += 1;
+
+        for i in 0..affected_len {
+            let n = affected_neighbors[i] as usize;
+            let candidate_count = self.get_candidates_count(n) as usize;
+            println!("Inserting {}", n);
+            self.candidate_bucket[candidate_count][self.bucket_len[candidate_count]] = n;
+            self.bucket_pos[n] = self.bucket_len[candidate_count];
+            self.bucket_len[candidate_count] += 1;
+        }
     }
 
     fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
@@ -229,18 +262,28 @@ impl Solver {
             let mut candidates = self.get_candidates(min_idx);
             let trailing_zeroes = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
             candidates &= !(1 << trailing_zeroes);
-
-
-
+            while candidates != 0 {
+                let (an, anl) = self.update_state(min_idx, trailing_zeroes as u8);
+                if self.bit_mrv() == false {
+                    self.restore_state(an, anl, min_idx, trailing_zeroes as u8);
+                }  
+                else {
+                    return true;
+                }
+            }
+            
         } else {
             return true
         }
-
         false
 
     }
 
-
+    pub fn solve(&mut self) -> bool {
+        
+        self.bit_mrv();
+        false
+    }
 
     
 }
@@ -337,9 +380,13 @@ mod tests {
             }
         }
 
-        
+        let idx = 2;
+        let candidate = 1;
 
-        solver.update_state(2, 1);
+        let (affected_neighbors, affected_len) = solver.update_state(2, 1);
+        solver.debug_check();
+
+        solver.restore_state(affected_neighbors, affected_len, idx, candidate);
         solver.debug_check();
         }
 }
