@@ -209,8 +209,7 @@ impl Solver {
             let last = self.bucket_len[old_count as usize] - 1;
             let pos = self.bucket_pos[n];
 
-            self.candidate_bucket[old_count as usize][pos] =
-                self.candidate_bucket[old_count as usize][last];
+            self.candidate_bucket[old_count as usize][pos] = self.candidate_bucket[old_count as usize][last];
 
             self.bucket_pos[self.candidate_bucket[old_count as usize][last]] = pos;
 
@@ -233,8 +232,7 @@ impl Solver {
         let last = self.bucket_len[candidate_count] - 1;
         let pos = self.bucket_pos[idx];
 
-        self.candidate_bucket[candidate_count][pos] =
-            self.candidate_bucket[candidate_count][last];
+        self.candidate_bucket[candidate_count][pos] = self.candidate_bucket[candidate_count][last];
 
         self.bucket_pos[self.candidate_bucket[candidate_count][last]] = pos;
 
@@ -266,8 +264,7 @@ impl Solver {
             let last = self.bucket_len[current_count] - 1;
             let pos = self.bucket_pos[n];
 
-            self.candidate_bucket[current_count][pos] =
-                self.candidate_bucket[current_count][last];
+            self.candidate_bucket[current_count][pos] = self.candidate_bucket[current_count][last];
 
             self.bucket_pos[self.candidate_bucket[current_count][last]] = pos;
             self.bucket_pos[n] = 100;
@@ -298,6 +295,10 @@ impl Solver {
     fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 
         let (min_idx, candidate_count) = self.get_min_candidate_idx();
+        let mut prop_length = 0;
+        let mut prop_arr = [0;81];
+        let mut prop_dig_arr = [0; 81];
+        let mut prop_log : [([(u8, u8); 20], usize); 81] = [([(0, 0); 20], 0); 81];
 
         if min_idx != 81 {
             let mut candidates = self.get_candidates(min_idx); 
@@ -305,7 +306,35 @@ impl Solver {
                 let trailing_zeroes = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
                 candidates &= !(1 << trailing_zeroes);
                 let (an, anl) = self.update_state(min_idx, trailing_zeroes as u8);
+                while self.bucket_len[1] > 0 {
+                    let prop_idx = self.candidate_bucket[1][self.bucket_len[1]-1];
+                    self.bucket_len[1] -= 1;
+                    if self.board[prop_idx] != 0 {
+                        continue;
+                    }    
+                    candidates = self.get_candidates(prop_idx);
+                    let prop_dig = candidates.trailing_zeros();
+                    prop_dig_arr[prop_length] = prop_dig;
+                    prop_arr[prop_length] = prop_idx;
+                    let (prop_affec_neigh, prop_affec_neigh_len) = self.update_state(prop_idx, prop_dig as u8);
+                    let log = (prop_affec_neigh, prop_affec_neigh_len);
+                    prop_log[prop_length] = log;
+                    prop_length += 1;
+
+                    if self.bucket_len[0] > 0 {
+                        if prop_length > 0 {
+                        for i in (0..prop_length).rev() {
+                            let (af, afl) = prop_log[i];
+                            let pc = prop_dig_arr[i];
+                            let pi = prop_arr[i];
+                            self.restore_state(af, afl, pi, pc as u8);
+                        }
+                    }
+                        return false;
+                    }
+                }
                 if self.bit_mrv() == false {
+                    
                     self.restore_state(an, anl, min_idx, trailing_zeroes as u8);
                 }  
                 else {
