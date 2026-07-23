@@ -1,5 +1,6 @@
 
 use sudoku_solver::{solver::Sudoku, euler_parser::parse};
+use sudoku_solver::better_solver::Solver;
 use std::time::Instant;
 use std::fs;
 
