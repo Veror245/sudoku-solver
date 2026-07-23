@@ -164,20 +164,26 @@ impl Solver {
 
         let candidate_count = self.get_candidates_count(idx) as usize;
         let mut neighbor_cc:u32; 
+        self.board[idx] = candidate;
 
-        let neighbors = self.neighbors[idx];
+        let mut affected_neighbors = [0u8; 20];
+        let mut affected_len = 0;
 
-        for n in neighbors {
+        for n in self.neighbors[idx] {
             if self.board[n as usize] != 0 {
                 continue;
             }
-            if self.check_if_present(candidate, n as usize) == true {
+            if (self.get_candidates(n as usize) & (1 << candidate)) != 0 {
+                println!("Removing {}", n);
+                affected_neighbors[affected_len] = n;
+                affected_len += 1;
                 neighbor_cc = self.get_candidates_count(n as usize);
                 if self.bucket_len[neighbor_cc as usize] > 0 {
                     let last_index = self.bucket_len[neighbor_cc as usize] - 1;
                     //remove
                     self.candidate_bucket[neighbor_cc as usize][self.bucket_pos[n as usize]] = self.candidate_bucket[neighbor_cc as usize][last_index]; // the last cell index in the candidate bucket
                     self.bucket_pos[self.candidate_bucket[neighbor_cc as usize][last_index]] = self.bucket_pos[n as usize]; // changing the bucket pos of the cell index
+                    self.bucket_pos[n as usize] = 100;
                     self.bucket_len[neighbor_cc as usize] -= 1;
                 }
             }
@@ -188,27 +194,22 @@ impl Solver {
             let last_index = self.bucket_len[candidate_count] - 1;
             self.candidate_bucket[candidate_count][self.bucket_pos[idx]] = self.candidate_bucket[candidate_count][last_index]; // the last cell index in the candidate bucket
             self.bucket_pos[self.candidate_bucket[candidate_count][last_index]] = self.bucket_pos[idx]; // changing the bucket pos of the cell index
+            self.bucket_pos[idx] = 100;
             self.bucket_len[candidate_count] -= 1;
         }
 
         self._insert_candidate_into_masks(candidate, idx);
 
-        for n in neighbors {
-            if self.board[n as usize] != 0 {
-                continue;
-            }
-            if self.check_if_present(candidate, n as usize) == true {
-                neighbor_cc = self.get_candidates_count(n as usize);
-                if self.bucket_len[neighbor_cc as usize] > 0 {
-                    //insert
-                    neighbor_cc = self.get_candidates_count(n as usize);
-                    self.candidate_bucket[neighbor_cc as usize][self.bucket_len[neighbor_cc as usize]] = n as usize;
-                    self.bucket_pos[n as usize] = self.bucket_len[neighbor_cc as usize];
-                    self.bucket_len[neighbor_cc as usize] += 1;
-                }
-            }
-            
+        for i in 0..affected_len {
+            let n = affected_neighbors[i];
+            println!("Inserting {}", n);
+            //insert
+            neighbor_cc = self.get_candidates_count(n as usize);
+            self.candidate_bucket[neighbor_cc as usize][self.bucket_len[neighbor_cc as usize]] = n as usize;
+            self.bucket_pos[n as usize] = self.bucket_len[neighbor_cc as usize];
+            self.bucket_len[neighbor_cc as usize] += 1;    
         }
+
 
 
     }
