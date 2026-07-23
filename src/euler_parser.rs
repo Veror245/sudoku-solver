@@ -39,3 +39,37 @@ pub fn parse(name: &str) -> Result<Sudokus, Box<dyn Error>> {
 
     Ok(sudos)
 }
+
+pub struct Sudokus1d{
+    pub boards: Vec<[u8; 81]>,
+}
+
+impl Sudokus1d {
+    pub fn push_sudo(&mut self, sudo: [u8; 81]) {
+        self.boards.push(sudo);
+    }
+}
+
+pub fn parse_1d(name: &str) -> Result<Sudokus1d, Box<dyn Error>> {
+    let contents = fs::read_to_string(name)?;
+    let lines: Vec<&str> = contents.lines().collect();
+
+    let mut sudos = Sudokus1d {
+        boards: Vec::new(),
+    };
+
+    for chunk in lines.chunks(10) {
+        let board = &chunk[1..10];
+        let mut sudo = [0u8; 81];
+
+        for (row, line) in board.iter().enumerate() {
+            for (col, ch) in line.chars().enumerate() {
+                sudo[row * 9 + col] = ch.to_digit(10).unwrap() as u8;
+            }
+        }
+
+        sudos.push_sudo(sudo);
+    }
+
+    Ok(sudos)
+}

@@ -1,4 +1,5 @@
 
+use sudoku_solver::euler_parser::parse_1d;
 use sudoku_solver::{solver::Sudoku, euler_parser::parse, better_solver::Solver};
 use std::time::Instant;
 use std::fs;
@@ -125,8 +126,9 @@ fn main() {
 //     println!("Time taken to solve normal sudoku with optimsed mrv: {:?} with {} calls with {} validity_checks", start.elapsed(), 
 //     sudoku.recursive_calls, sudoku.validity_checks);
 
-//     euler_solve("bt");
-//     euler_solve("opt_mrv");
+    euler_solve("bt");
+    euler_solve("opt_mrv");
+    euler_solve("bit_mrv");
 
         // benchmark(100);
 
@@ -167,28 +169,25 @@ fn euler_solve(mode: &str) {
                 continue;
             }
         }
-        println!("Time taken to solve eulers 96 50 sudokus with mrv: {:?}", start.elapsed());
+        println!("Time taken to solve eulers 96 50 sudokus with opt_mrv: {:?}", start.elapsed());
 
         println!("final Sum: {}", three);
     } else if mode == "bit_mrv" {
+        let res = parse_1d("./data/sudoku.txt").unwrap();
         let start = Instant::now();
         for s in res.boards {
             //c += 1;
-            let mut sudoku = Solver::new(s.iter().flatten().copied().collect());
+            let mut sudoku = Solver::new(s);
             if sudoku.solve() == true {
-                three += (sudoku.board[0] as i32)*100 + (sudoku.board[9] as i32) * 10 + sudoku.board[18] as i32;
+                three += (sudoku.board[0] as i32)*100 + (sudoku.board[1] as i32) * 10 + sudoku.board[2] as i32;
                 continue;
             }
         }
-        println!("Time taken to solve eulers 96 50 sudokus with mrv: {:?}", start.elapsed());
+        println!("Time taken to solve eulers 96 50 sudokus with bit_mrv: {:?}", start.elapsed());
 
         println!("final Sum: {}", three);
 
     }
-    
-
-   
-
 }
 
 fn load_data() -> Vec<[[u8; 9]; 9]> {

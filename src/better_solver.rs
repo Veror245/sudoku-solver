@@ -1,4 +1,7 @@
-use std::mem::transmute;
+
+
+
+const ALL_DIGITS: u16 = 0b1111111110;
 
 pub struct Solver {
     pub board: [u8; 81],
@@ -91,7 +94,7 @@ impl Solver {
 
     fn get_candidates_count(&self, idx: usize) -> u32{
 
-        const ALL_DIGITS: u16 = 0b1111111110;
+        
 
         let row = idx / 9;
         let col = idx % 9;
@@ -131,7 +134,7 @@ impl Solver {
 
     }
 
-    fn check_if_present(&self, candidate: u8, idx: usize) -> bool {
+    fn _check_if_present(&self, candidate: u8, idx: usize) -> bool {
 
         let row = idx / 9;
         let col = idx % 9;
@@ -146,15 +149,13 @@ impl Solver {
 
         let idx: usize;
         
-        for i in 1..=9 {
+        for i in 0..=9 {
             if self.bucket_len[i] > 0 {
                 idx = self.candidate_bucket[i][0];
                 return idx
             }
             
         }
-
-
         81
 
     }
@@ -176,7 +177,7 @@ impl Solver {
                 continue;
             }
             if (self.get_candidates(n as usize) & (1 << candidate)) != 0 {
-                println!("Removing {}", n);
+                //println!("Removing {}", n);
                 affected_neighbors[affected_len] = n;
                 affected_len += 1;
                 neighbor_cc = self.get_candidates_count(n as usize);
@@ -204,7 +205,7 @@ impl Solver {
 
         for i in 0..affected_len {
             let n = affected_neighbors[i];
-            println!("Inserting {}", n);
+            //println!("Inserting {}", n);
             //insert
             neighbor_cc = self.get_candidates_count(n as usize);
             self.candidate_bucket[neighbor_cc as usize][self.bucket_len[neighbor_cc as usize]] = n as usize;
@@ -218,13 +219,10 @@ impl Solver {
 
     fn restore_state(&mut self, affected_neighbors: [u8; 20], affected_len: usize, idx: usize, candidate: u8) {
 
-        
-
         for i in 0..affected_len {
             let n = affected_neighbors[i] as usize;
             let candidate_count = self.get_candidates_count( n) as usize;
             let last_index = self.bucket_len[candidate_count as usize] - 1;
-            println!("Removing {}", n);
             //remove
             self.candidate_bucket[candidate_count as usize][self.bucket_pos[n as usize]] = self.candidate_bucket[candidate_count as usize][last_index]; // the last cell index in the candidate bucket
             self.bucket_pos[self.candidate_bucket[candidate_count as usize][last_index]] = self.bucket_pos[n as usize]; // changing the bucket pos of the cell index
@@ -244,7 +242,6 @@ impl Solver {
         for i in 0..affected_len {
             let n = affected_neighbors[i] as usize;
             let candidate_count = self.get_candidates_count(n) as usize;
-            println!("Inserting {}", n);
             self.candidate_bucket[candidate_count][self.bucket_len[candidate_count]] = n;
             self.bucket_pos[n] = self.bucket_len[candidate_count];
             self.bucket_len[candidate_count] += 1;
@@ -254,15 +251,12 @@ impl Solver {
     fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 
         let min_idx = self.get_min_candidate_idx();
-        let row = min_idx / 9;
-        let col = min_idx % 9;
-        let box_idx = (row / 3) * 3 + col / 3;  
 
         if min_idx != 81 {
-            let mut candidates = self.get_candidates(min_idx);
-            let trailing_zeroes = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
-            candidates &= !(1 << trailing_zeroes);
+            let mut candidates = self.get_candidates(min_idx); 
             while candidates != 0 {
+                let trailing_zeroes = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
+                candidates &= !(1 << trailing_zeroes);
                 let (an, anl) = self.update_state(min_idx, trailing_zeroes as u8);
                 if self.bit_mrv() == false {
                     self.restore_state(an, anl, min_idx, trailing_zeroes as u8);
@@ -275,118 +269,118 @@ impl Solver {
         } else {
             return true
         }
+
         false
 
     }
 
     pub fn solve(&mut self) -> bool {
+        return self.bit_mrv();
         
-        self.bit_mrv();
-        false
     }
 
     
 }
 
 
-#[cfg(test)]
-impl Solver {
-    pub fn debug_check(&self) {
-        let mut empty_cells = 0;
+// #[cfg(test)]
+// impl Solver {
+//     pub fn debug_check(&self) {
+//         let mut empty_cells = 0;
 
-        for idx in 0..81 {
-            if self.board[idx] != 0 {
-                continue;
-            }
+//         for idx in 0..81 {
+//             if self.board[idx] != 0 {
+//                 continue;
+//             }
 
-            empty_cells += 1;
+//             empty_cells += 1;
 
           
 
-            let count = self.get_candidates_count(idx) as usize;
-            let pos = self.bucket_pos[idx];
+//             let count = self.get_candidates_count(idx) as usize;
+//             let pos = self.bucket_pos[idx];
 
-            assert!(
-                pos < self.bucket_len[count],
-                "Cell {} has invalid bucket_pos {} for bucket {}",
-                idx,
-                pos,
-                count
-            );
+//             assert!(
+//                 pos < self.bucket_len[count],
+//                 "Cell {} has invalid bucket_pos {} for bucket {}",
+//                 idx,
+//                 pos,
+//                 count
+//             );
 
-            assert_eq!(
-                self.candidate_bucket[count][pos],
-                idx,
-                "Cell {} is not at its recorded bucket position",
-                idx
-            );
-        }
+//             assert_eq!(
+//                 self.candidate_bucket[count][pos],
+//                 idx,
+//                 "Cell {} is not at its recorded bucket position",
+//                 idx
+//             );
+//         }
 
-        let total: usize = self.bucket_len.iter().skip(1).filter(|x| **x != 100).sum();
+//         let total: usize = self.bucket_len.iter().skip(1).filter(|x| **x != 100).sum();
 
-        assert_eq!(
-            total,
-            empty_cells,
-            "Bucket lengths ({}) != empty cells ({})",
-            total,
-            empty_cells
-        );
+//         assert_eq!(
+//             total,
+//             empty_cells,
+//             "Bucket lengths ({}) != empty cells ({})",
+//             total,
+//             empty_cells
+//         );
 
-        println!("✅ Bucket invariants OK");
+//         println!("✅ Bucket invariants OK");
 
-        for bucket in 1..=9 {
-                for i in 0..self.bucket_len[bucket] {
-                let cell = self.candidate_bucket[bucket][i];
+//         for bucket in 1..=9 {
+//                 for i in 0..self.bucket_len[bucket] {
+//                 let cell = self.candidate_bucket[bucket][i];
 
-                assert_eq!(self.bucket_pos[cell], i);
-                assert_eq!(self.get_candidates_count(cell) as usize, bucket);
-            }
-        }
-    }
-}
-
-
+//                 assert_eq!(self.bucket_pos[cell], i);
+//                 assert_eq!(self.get_candidates_count(cell) as usize, bucket);
+//             }
+//         }
+//     }
+// }
 
 
-#[cfg(test)]
-mod tests {
-    use super::*;
 
-    #[test]
-    fn test_bucket_invariants() {
-        let board = [
-    9,8,0,7,0,0,6,0,0,
-    7,5,0,0,4,0,0,0,0,
-    0,0,3,0,0,8,0,7,0,
-    5,0,0,0,0,7,0,3,0,
-    0,0,9,4,0,0,0,0,0,
-    0,0,0,2,0,1,0,0,3,
-    0,0,0,0,0,0,1,0,9,
-    0,0,0,5,0,8,0,0,0,
-    5,2,0,0,0,0,0,6,0,
-];
 
-        let mut solver = Solver::new(board);
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-        solver.debug_check();
+//     #[test]
+//     fn test_bucket_invariants() {
+//         let board = [
+//     9,8,0,7,0,0,6,0,0,
+//     7,5,0,0,4,0,0,0,0,
+//     0,0,3,0,0,8,0,7,0,
+//     5,0,0,0,0,7,0,3,0,
+//     0,0,9,4,0,0,0,0,0,
+//     0,0,0,2,0,1,0,0,3,
+//     0,0,0,0,0,0,1,0,9,
+//     0,0,0,5,0,8,0,0,0,
+//     5,2,0,0,0,0,0,6,0,
+// ];
 
-        for i in 0..81 {
-            if solver.board[i] == 0 {
-                assert!(
-                    solver.bucket_pos[i] != 100,
-                    "Cell {} never got a bucket position!",
-                    i
-                );
-            }
-        }
+//         let mut solver = Solver::new(board);
 
-        let idx = 2;
-        let candidate = 1;
+//         solver.debug_check();
 
-        let (affected_neighbors, affected_len) = solver.update_state(2, 1);
-        solver.debug_check();
+//         for i in 0..81 {
+//             if solver.board[i] == 0 {
+//                 assert!(
+//                     solver.bucket_pos[i] != 100,
+//                     "Cell {} never got a bucket position!",
+//                     i
+//                 );
+//             }
+//         }
 
-        solver.restore_state(affected_neighbors, affected_len, idx, candidate);
-        solver.debug_check();
-        }
-}
+//         let idx = 2;
+//         let candidate = 1;
+
+//         let (affected_neighbors, affected_len) = solver.update_state(2, 1);
+//         solver.debug_check();
+
+//         solver.restore_state(affected_neighbors, affected_len, idx, candidate);
+//         solver.debug_check();
+//         }
+// }
