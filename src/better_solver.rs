@@ -1,3 +1,5 @@
+use std::mem::transmute;
+
 
 
 
@@ -145,18 +147,19 @@ impl Solver {
         (self.box_mask[box_idx] & (1 << candidate) != 0)
     }
 
-    fn get_min_candidate_idx(&self) -> usize {
+    fn get_min_candidate_idx(&self) -> (usize, u8) {
 
         let idx: usize;
+        let count: u8 = 0;
         
         for i in 0..=9 {
             if self.bucket_len[i] > 0 {
                 idx = self.candidate_bucket[i][0];
-                return idx
+                return (idx, i as u8)
             }
             
         }
-        81
+        (81, count)
 
     }
 
@@ -250,7 +253,7 @@ impl Solver {
 
     fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 
-        let min_idx = self.get_min_candidate_idx();
+        let (min_idx, candidate_count) = self.get_min_candidate_idx();
 
         if min_idx != 81 {
             let mut candidates = self.get_candidates(min_idx); 
