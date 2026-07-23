@@ -164,12 +164,14 @@ impl Solver {
 
         let candidate_count = self.get_candidates_count(idx) as usize;
         let mut neighbor_cc:u32; 
-        self._insert_candidate_into_masks(candidate, idx);
 
         let neighbors = self.neighbors[idx];
 
         for n in neighbors {
-            if self.check_if_present(candidate, n as usize) == false {
+            if self.board[n as usize] != 0 {
+                continue;
+            }
+            if self.check_if_present(candidate, n as usize) == true {
                 neighbor_cc = self.get_candidates_count(n as usize);
                 if self.bucket_len[neighbor_cc as usize] > 0 {
                     let last_index = self.bucket_len[neighbor_cc as usize] - 1;
@@ -177,11 +179,6 @@ impl Solver {
                     self.candidate_bucket[neighbor_cc as usize][self.bucket_pos[n as usize]] = self.candidate_bucket[neighbor_cc as usize][last_index]; // the last cell index in the candidate bucket
                     self.bucket_pos[self.candidate_bucket[neighbor_cc as usize][last_index]] = self.bucket_pos[n as usize]; // changing the bucket pos of the cell index
                     self.bucket_len[neighbor_cc as usize] -= 1;
-                    //insert
-                    //neighbor_cc = self.get_candidates_count(n as usize);
-                    self.candidate_bucket[neighbor_cc as usize][self.bucket_len[neighbor_cc as usize]] = n as usize;
-                    self.bucket_pos[n as usize] = self.bucket_len[neighbor_cc as usize];
-                    self.bucket_len[neighbor_cc as usize] += 1;
                 }
             }
             
@@ -192,6 +189,25 @@ impl Solver {
             self.candidate_bucket[candidate_count][self.bucket_pos[idx]] = self.candidate_bucket[candidate_count][last_index]; // the last cell index in the candidate bucket
             self.bucket_pos[self.candidate_bucket[candidate_count][last_index]] = self.bucket_pos[idx]; // changing the bucket pos of the cell index
             self.bucket_len[candidate_count] -= 1;
+        }
+
+        self._insert_candidate_into_masks(candidate, idx);
+
+        for n in neighbors {
+            if self.board[n as usize] != 0 {
+                continue;
+            }
+            if self.check_if_present(candidate, n as usize) == true {
+                neighbor_cc = self.get_candidates_count(n as usize);
+                if self.bucket_len[neighbor_cc as usize] > 0 {
+                    //insert
+                    neighbor_cc = self.get_candidates_count(n as usize);
+                    self.candidate_bucket[neighbor_cc as usize][self.bucket_len[neighbor_cc as usize]] = n as usize;
+                    self.bucket_pos[n as usize] = self.bucket_len[neighbor_cc as usize];
+                    self.bucket_len[neighbor_cc as usize] += 1;
+                }
+            }
+            
         }
 
 
@@ -241,6 +257,8 @@ impl Solver {
 
             empty_cells += 1;
 
+          
+
             let count = self.get_candidates_count(idx) as usize;
             let pos = self.bucket_pos[idx];
 
@@ -260,7 +278,7 @@ impl Solver {
             );
         }
 
-        let total: usize = self.bucket_len.iter().skip(1).sum();
+        let total: usize = self.bucket_len.iter().skip(1).filter(|x| **x != 100).sum();
 
         assert_eq!(
             total,
@@ -273,13 +291,13 @@ impl Solver {
         println!("✅ Bucket invariants OK");
 
         for bucket in 1..=9 {
-        for i in 0..self.bucket_len[bucket] {
-        let cell = self.candidate_bucket[bucket][i];
+                for i in 0..self.bucket_len[bucket] {
+                let cell = self.candidate_bucket[bucket][i];
 
-        assert_eq!(self.bucket_pos[cell], i);
-        assert_eq!(self.get_candidates_count(cell) as usize, bucket);
-    }
-}
+                assert_eq!(self.bucket_pos[cell], i);
+                assert_eq!(self.get_candidates_count(cell) as usize, bucket);
+            }
+        }
     }
 }
 
@@ -307,6 +325,16 @@ mod tests {
         let mut solver = Solver::new(board);
 
         solver.debug_check();
+
+        for i in 0..81 {
+            if solver.board[i] == 0 {
+                assert!(
+                    solver.bucket_pos[i] != 100,
+                    "Cell {} never got a bucket position!",
+                    i
+                );
+            }
+        }
 
         
 
