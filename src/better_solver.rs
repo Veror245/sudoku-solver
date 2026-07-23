@@ -11,6 +11,9 @@ pub struct Solver {
     row_mask: [u16; 9],
     col_mask: [u16; 9],
     box_mask: [u16; 9],
+
+    candidate_mask: [u16; 81],
+    candidate_count: [u8; 81],
     
     neighbors: [[u8; 20]; 81], 
     candidate_bucket: [[usize; 81]; 10], //actual candidate buckets containing rows as candidate counr and cols as the indexes
@@ -29,6 +32,8 @@ impl Solver {
         let mut candidate_bucket = [[ 100 as usize; 81]; 10];
         let mut bucket_len = [0usize; 10];
         let mut bucket_pos: [usize; 81] = [100usize; 81];
+        let mut candidate_mask: [u16; 81] = [0u16; 81];
+        let mut candidate_count: [u8; 81] = [100; 81];
         
 
         for (idx, cell) in board.iter().enumerate() {
@@ -59,55 +64,66 @@ impl Solver {
         }
 
         for (idx, cell) in board.iter().enumerate() {
-
-            if *cell == 0 {
-                let candidates_count = super::better_solver::Solver::get_candidates_count(&Self { board, row_mask, col_mask, box_mask, neighbors, candidate_bucket, bucket_len, bucket_pos }, idx);
-                candidate_bucket[candidates_count as usize][bucket_len[candidates_count as usize]]= idx;
-                bucket_pos[idx] = bucket_len[candidates_count as usize];
-                bucket_len[candidates_count as usize] += 1;
-                
+            if *cell != 0 {
+                continue;
             }
 
+            let row = idx / 9;
+            let col = idx % 9;
+            let box_idx = (row / 3) * 3 + col / 3;
 
+            let used = row_mask[row] | col_mask[col] | box_mask[box_idx];
+            let mask = !used & ALL_DIGITS;
+
+            candidate_mask[idx] = mask;
+
+            let count = mask.count_ones() as u8;
+            candidate_count[idx] = count;
+
+            candidate_bucket[count as usize][bucket_len[count as usize]] = idx;
+            bucket_pos[idx] = bucket_len[count as usize];
+            bucket_len[count as usize] += 1;
         }
 
 
         Self { board:board, row_mask:row_mask, col_mask:col_mask, box_mask:box_mask, neighbors: neighbors, 
-            candidate_bucket: candidate_bucket, bucket_len:bucket_len, bucket_pos: bucket_pos }
+            candidate_bucket: candidate_bucket, bucket_len:bucket_len, bucket_pos: bucket_pos, candidate_mask, candidate_count }
 
         
     }
 
     fn get_candidates(&self, idx: usize) -> u16{
 
-        const ALL_DIGITS: u16 = 0b1111111110;
+        self.candidate_mask[idx]
 
-        let row = idx / 9;
-        let col = idx % 9;
-        let box_idx = (row / 3) * 3 + col / 3 ;
+        // const ALL_DIGITS: u16 = 0b1111111110;
 
-        let used = self.row_mask[row] | self.col_mask[col] | self.box_mask[box_idx];
-        let candidates = !used & ALL_DIGITS;
+        // let row = idx / 9;
+        // let col = idx % 9;
+        // let box_idx = (row / 3) * 3 + col / 3 ;
 
-        return candidates
+        // let used = self.row_mask[row] | self.col_mask[col] | self.box_mask[box_idx];
+        // let candidates = !used & ALL_DIGITS;
+
+        // return candidates
         
 
     }
 
     fn get_candidates_count(&self, idx: usize) -> u32{
 
-        
+        self.candidate_count[idx] as u32
 
-        let row = idx / 9;
-        let col = idx % 9;
-        let box_idx = (row / 3) * 3 + col / 3 ;
+        // let row = idx / 9;
+        // let col = idx % 9;
+        // let box_idx = (row / 3) * 3 + col / 3 ;
 
-        let used = self.row_mask[row] | self.col_mask[col] | self.box_mask[box_idx];
-        let candidates = !used & ALL_DIGITS;
+        // let used = self.row_mask[row] | self.col_mask[col] | self.box_mask[box_idx];
+        // let candidates = !used & ALL_DIGITS;
 
-        let count = candidates.count_ones();
+        // let count = candidates.count_ones();
 
-        count
+        // count
 
     }
 

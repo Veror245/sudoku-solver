@@ -128,9 +128,9 @@ fn main() {
 
     //euler_solve("bt");
     //euler_solve("opt_mrv");
-    //euler_solve("bit_mrv");
+    euler_solve("bit_mrv");
 
-    benchmark(1000);
+    //benchmark(1000);
 
     
     
