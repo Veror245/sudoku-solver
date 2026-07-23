@@ -110,7 +110,7 @@ impl Solver {
 
     }
 
-    fn get_candidates_count(&self, idx: usize) -> u32{
+    fn _get_candidates_count(&self, idx: usize) -> u32{
 
         self.candidate_count[idx] as u32
 
@@ -179,93 +179,121 @@ impl Solver {
 
     }
 
-    fn update_state(&mut self, idx: usize, candidate: u8) -> ([u8; 20], usize) { //update row mask, col mask, box mask, candidate map, candidate bucket len
-        /*candidate_bucket: [[usize; 81]; 10],
-            bucket_len: [usize; 10] */
-
-
-        let candidate_count = self.get_candidates_count(idx) as usize;
-        let mut neighbor_cc:u32; 
+    fn update_state(&mut self, idx: usize, candidate: u8) -> ([(u8, u8); 20], usize) {
+        let candidate_count = self.candidate_count[idx] as usize;
         self.board[idx] = candidate;
 
-        let mut affected_neighbors = [0u8; 20];
+        let mut affected_neighbors = [(0u8, 0u8); 20];
         let mut affected_len = 0;
 
+        // Remove affected neighbors from their buckets and update their candidates
         for n in self.neighbors[idx] {
-            if self.board[n as usize] != 0 {
+            let n = n as usize;
+
+            if self.board[n] != 0 {
                 continue;
             }
-            if (self.get_candidates(n as usize) & (1 << candidate)) != 0 {
-                //println!("Removing {}", n);
-                affected_neighbors[affected_len] = n;
-                affected_len += 1;
-                neighbor_cc = self.get_candidates_count(n as usize);
-                if self.bucket_len[neighbor_cc as usize] > 0 {
-                    let last_index = self.bucket_len[neighbor_cc as usize] - 1;
-                    //remove
-                    self.candidate_bucket[neighbor_cc as usize][self.bucket_pos[n as usize]] = self.candidate_bucket[neighbor_cc as usize][last_index]; // the last cell index in the candidate bucket
-                    self.bucket_pos[self.candidate_bucket[neighbor_cc as usize][last_index]] = self.bucket_pos[n as usize]; // changing the bucket pos of the cell index
-                    self.bucket_pos[n as usize] = 100;
-                    self.bucket_len[neighbor_cc as usize] -= 1;
-                }
+
+            // Was this digit actually a candidate?
+            if (self.candidate_mask[n] & (1 << candidate)) == 0 {
+                continue;
             }
-            
+
+            let old_count = self.candidate_count[n];
+
+            // Save for restore
+            affected_neighbors[affected_len] = (n as u8, old_count);
+            affected_len += 1;
+
+            // Remove from old bucket
+            let last = self.bucket_len[old_count as usize] - 1;
+            let pos = self.bucket_pos[n];
+
+            self.candidate_bucket[old_count as usize][pos] =
+                self.candidate_bucket[old_count as usize][last];
+
+            self.bucket_pos[self.candidate_bucket[old_count as usize][last]] = pos;
+
+            self.bucket_pos[n] = 100;
+            self.bucket_len[old_count as usize] -= 1;
+
+            // Update candidate state
+            self.candidate_mask[n] &= !(1 << candidate);
+            self.candidate_count[n] -= 1;
+
+            let new_count = self.candidate_count[n];
+
+            // Insert into new bucket
+            self.candidate_bucket[new_count as usize][self.bucket_len[new_count as usize]] = n;
+            self.bucket_pos[n] = self.bucket_len[new_count as usize];
+            self.bucket_len[new_count as usize] += 1;
         }
 
-        if self.bucket_len[candidate_count] > 0 {
-            let last_index = self.bucket_len[candidate_count] - 1;
-            self.candidate_bucket[candidate_count][self.bucket_pos[idx]] = self.candidate_bucket[candidate_count][last_index]; // the last cell index in the candidate bucket
-            self.bucket_pos[self.candidate_bucket[candidate_count][last_index]] = self.bucket_pos[idx]; // changing the bucket pos of the cell index
-            self.bucket_pos[idx] = 100;
-            self.bucket_len[candidate_count] -= 1;
-        }
+        // Remove placed cell from bucket
+        let last = self.bucket_len[candidate_count] - 1;
+        let pos = self.bucket_pos[idx];
 
+        self.candidate_bucket[candidate_count][pos] =
+            self.candidate_bucket[candidate_count][last];
+
+        self.bucket_pos[self.candidate_bucket[candidate_count][last]] = pos;
+
+        self.bucket_pos[idx] = 100;
+        self.bucket_len[candidate_count] -= 1;
+
+        // Update board constraints
         self._insert_candidate_into_masks(candidate, idx);
 
-        for i in 0..affected_len {
-            let n = affected_neighbors[i];
-            //println!("Inserting {}", n);
-            //insert
-            neighbor_cc = self.get_candidates_count(n as usize);
-            self.candidate_bucket[neighbor_cc as usize][self.bucket_len[neighbor_cc as usize]] = n as usize;
-            self.bucket_pos[n as usize] = self.bucket_len[neighbor_cc as usize];
-            self.bucket_len[neighbor_cc as usize] += 1;    
-        }
-
         (affected_neighbors, affected_len)
-
     }
 
-    fn restore_state(&mut self, affected_neighbors: [u8; 20], affected_len: usize, idx: usize, candidate: u8) {
 
+    fn restore_state(
+    &mut self,
+    affected_neighbors: [(u8, u8); 20],
+    affected_len: usize,
+    idx: usize,
+    candidate: u8,
+    ) {
+    // Remove neighbors from their current buckets and restore candidates
         for i in 0..affected_len {
-            let n = affected_neighbors[i] as usize;
-            let candidate_count = self.get_candidates_count( n) as usize;
-            let last_index = self.bucket_len[candidate_count as usize] - 1;
-            //remove
-            self.candidate_bucket[candidate_count as usize][self.bucket_pos[n as usize]] = self.candidate_bucket[candidate_count as usize][last_index]; // the last cell index in the candidate bucket
-            self.bucket_pos[self.candidate_bucket[candidate_count as usize][last_index]] = self.bucket_pos[n as usize]; // changing the bucket pos of the cell index
-            self.bucket_pos[n as usize] = 100;
-            self.bucket_len[candidate_count as usize] -= 1;
+            let (n, old_count) = affected_neighbors[i];
+            let n = n as usize;
+
+            let current_count = self.candidate_count[n] as usize;
+
+            // Remove from current bucket
+            let last = self.bucket_len[current_count] - 1;
+            let pos = self.bucket_pos[n];
+
+            self.candidate_bucket[current_count][pos] =
+                self.candidate_bucket[current_count][last];
+
+            self.bucket_pos[self.candidate_bucket[current_count][last]] = pos;
+            self.bucket_pos[n] = 100;
+            self.bucket_len[current_count] -= 1;
+
+            // Restore candidate state
+            self.candidate_mask[n] |= 1 << candidate;
+            self.candidate_count[n] = old_count;
+
+            // Insert back into old bucket
+            self.candidate_bucket[old_count as usize][self.bucket_len[old_count as usize]] = n;
+            self.bucket_pos[n] = self.bucket_len[old_count as usize];
+            self.bucket_len[old_count as usize] += 1;
         }
 
+        // Restore board and masks
         self._remove_candidate_from_masks(candidate, idx);
         self.board[idx] = 0;
 
-        let candidate_count = self.get_candidates_count(idx) as usize;
-
-        self.candidate_bucket[candidate_count][self.bucket_len[candidate_count]] = idx;
-        self.bucket_pos[idx] = self.bucket_len[candidate_count];
-        self.bucket_len[candidate_count] += 1;
-
-        for i in 0..affected_len {
-            let n = affected_neighbors[i] as usize;
-            let candidate_count = self.get_candidates_count(n) as usize;
-            self.candidate_bucket[candidate_count][self.bucket_len[candidate_count]] = n;
-            self.bucket_pos[n] = self.bucket_len[candidate_count];
-            self.bucket_len[candidate_count] += 1;
-        }
+        // Restore placed cell into its bucket
+        let count = self.candidate_count[idx] as usize;
+        self.candidate_bucket[count][self.bucket_len[count]] = idx;
+        self.bucket_pos[idx] = self.bucket_len[count];
+        self.bucket_len[count] += 1;
     }
+
 
     fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 

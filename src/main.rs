@@ -130,7 +130,7 @@ fn main() {
     //euler_solve("opt_mrv");
     euler_solve("bit_mrv");
 
-    //benchmark(1000);
+    benchmark(1000);
 
     
     
@@ -302,8 +302,8 @@ fn benchmark(n:usize) {
         solvers.push(Solver::new(board));
     }
 
-    println!("Press Enter to start profiling...");
-    std::io::stdin().read_line(&mut String::new()).unwrap();
+    // println!("Press Enter to start profiling...");
+    // std::io::stdin().read_line(&mut String::new()).unwrap();
 
     let start = Instant::now();
 
