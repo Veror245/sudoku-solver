@@ -299,7 +299,7 @@ impl Solver {
     }
 
 
-    fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
+    fn bit_mrv_naked_s(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 
         let (min_idx, candidate_count) = self.get_min_candidate_idx();
         
@@ -365,6 +365,34 @@ impl Solver {
         false
 
     }
+
+     fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
+
+        let (min_idx, candidate_count) = self.get_min_candidate_idx();
+        
+        if min_idx != 81 {
+            let mut candidates = self.get_candidates(min_idx); 
+            while candidates != 0 {
+                let digit = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
+                candidates &= !(1 << digit);
+                let (an, anl) = self.update_state(min_idx, digit as u8);
+                if self.bit_mrv() == false {
+                    self.restore_state(an, anl, min_idx, digit as u8);
+                }  
+                else {
+                    return true;
+                }
+            }
+            
+        } else {
+            return true
+        }
+
+        false
+
+    }
+
+        
 
     pub fn solve(&mut self) -> bool {
         return self.bit_mrv();
