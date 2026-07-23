@@ -179,6 +179,7 @@ fn euler_solve(mode: &str) {
             //c += 1;
             let mut sudoku = Solver::new(s);
             if sudoku.solve() == true {
+
                 three += (sudoku.board[0] as i32)*100 + (sudoku.board[1] as i32) * 10 + sudoku.board[2] as i32;
                 continue;
             }

@@ -150,6 +150,8 @@ impl Solver {
         self.col_mask[col] ^= 1 << candidate; 
         self.box_mask[box_idx] ^= 1 << candidate; 
 
+        
+
     }
 
     fn _check_if_present(&self, candidate: u8, idx: usize) -> bool {
@@ -254,11 +256,14 @@ impl Solver {
     candidate: u8,
     ) {
     // Remove neighbors from their current buckets and restore candidates
+
+        
         for i in 0..affected_len {
             let (n, old_count) = affected_neighbors[i];
             let n = n as usize;
 
             let current_count = self.candidate_count[n] as usize;
+            
 
             // Remove from current bucket
             let last = self.bucket_len[current_count] - 1;
@@ -289,31 +294,30 @@ impl Solver {
         self.candidate_bucket[count][self.bucket_len[count]] = idx;
         self.bucket_pos[idx] = self.bucket_len[count];
         self.bucket_len[count] += 1;
+
+        
     }
 
 
     fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 
         let (min_idx, candidate_count) = self.get_min_candidate_idx();
-        let mut prop_length = 0;
+        
         let mut prop_arr = [0;81];
         let mut prop_dig_arr = [0; 81];
         let mut prop_log : [([(u8, u8); 20], usize); 81] = [([(0, 0); 20], 0); 81];
 
         if min_idx != 81 {
             let mut candidates = self.get_candidates(min_idx); 
-            while candidates != 0 {
-                let trailing_zeroes = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
-                candidates &= !(1 << trailing_zeroes);
-                let (an, anl) = self.update_state(min_idx, trailing_zeroes as u8);
+            'outer: while candidates != 0 {
+                let mut prop_length = 0;
+                let digit = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
+                candidates &= !(1 << digit);
+                let (an, anl) = self.update_state(min_idx, digit as u8);
                 while self.bucket_len[1] > 0 {
                     let prop_idx = self.candidate_bucket[1][self.bucket_len[1]-1];
-                    self.bucket_len[1] -= 1;
-                    if self.board[prop_idx] != 0 {
-                        continue;
-                    }    
-                    candidates = self.get_candidates(prop_idx);
-                    let prop_dig = candidates.trailing_zeros();
+                    let prop_candidates = self.get_candidates(prop_idx);
+                    let prop_dig = prop_candidates.trailing_zeros();
                     prop_dig_arr[prop_length] = prop_dig;
                     prop_arr[prop_length] = prop_idx;
                     let (prop_affec_neigh, prop_affec_neigh_len) = self.update_state(prop_idx, prop_dig as u8);
@@ -329,13 +333,25 @@ impl Solver {
                             let pi = prop_arr[i];
                             self.restore_state(af, afl, pi, pc as u8);
                         }
-                    }
-                        return false;
+                    }   
+
+                        self.restore_state(an, anl, min_idx, digit as u8);
+                      
+                        continue 'outer;
                     }
                 }
                 if self.bit_mrv() == false {
+                
+                    if prop_length > 0 {
+                    for i in (0..prop_length).rev() {
+                        let (af, afl) = prop_log[i];
+                        let pc = prop_dig_arr[i];
+                        let pi = prop_arr[i];
+                        self.restore_state(af, afl, pi, pc as u8);
+                    }
+                } 
                     
-                    self.restore_state(an, anl, min_idx, trailing_zeroes as u8);
+                    self.restore_state(an, anl, min_idx, digit as u8);
                 }  
                 else {
                     return true;
@@ -373,7 +389,7 @@ impl Solver {
 
           
 
-//             let count = self.get_candidates_count(idx) as usize;
+//             let count = self._get_candidates_count(idx) as usize;
 //             let pos = self.bucket_pos[idx];
 
 //             assert!(
@@ -409,9 +425,42 @@ impl Solver {
 //                 let cell = self.candidate_bucket[bucket][i];
 
 //                 assert_eq!(self.bucket_pos[cell], i);
-//                 assert_eq!(self.get_candidates_count(cell) as usize, bucket);
+//                 assert_eq!(self._get_candidates_count(cell) as usize, bucket);
 //             }
 //         }
+
+//         let total: usize = self.bucket_len.iter().skip(1).sum();
+
+// if total != empty_cells {
+//     println!("==========================");
+
+//     for idx in 0..81 {
+//         if self.board[idx] == 0 {
+//             let mut found = false;
+
+//             for bucket in 1..=9 {
+//                 for i in 0..self.bucket_len[bucket] {
+//                     if self.candidate_bucket[bucket][i] == idx {
+//                         found = true;
+//                     }
+//                 }
+//             }
+
+//             if !found {
+//                 println!("Missing cell: {}", idx);
+//                 println!("bucket_pos = {}", self.bucket_pos[idx]);
+//                 println!("candidate_count = {}", self.candidate_count[idx]);
+//                 println!("candidate_mask = {:09b}", self.candidate_mask[idx]);
+//             }
+//         }
+//     }
+
+//     panic!(
+//         "Bucket lengths ({}) != empty cells ({})",
+//         total,
+//         empty_cells
+//     );
+// }
 //     }
 // }
 
@@ -433,7 +482,7 @@ impl Solver {
 //     0,0,0,2,0,1,0,0,3,
 //     0,0,0,0,0,0,1,0,9,
 //     0,0,0,5,0,8,0,0,0,
-//     5,2,0,0,0,0,0,6,0,
+//     0,2,0,0,0,0,0,6,0,
 // ];
 
 //         let mut solver = Solver::new(board);
@@ -459,4 +508,129 @@ impl Solver {
 //         solver.restore_state(affected_neighbors, affected_len, idx, candidate);
 //         solver.debug_check();
 //         }
+// }
+
+
+
+// #[cfg(test)]
+// mod tests_2 {
+//     use super::*;
+
+//     const BOARD: [u8; 81] = [
+//         9,8,0,7,0,0,6,0,0,
+//         7,5,0,0,4,0,0,0,0,
+//         0,0,3,0,0,8,0,7,0,
+//         5,0,0,0,0,7,0,3,0,
+//         0,0,9,4,0,0,0,0,0,
+//         0,0,0,2,0,1,0,0,3,
+//         0,0,0,0,0,0,1,0,9,
+//         0,0,0,5,0,8,0,0,0,
+//         5,2,0,0,0,0,0,6,0,
+//     ];
+
+//     fn verify_masks(solver: &Solver) {
+//         for idx in 0..81 {
+//             if solver.board[idx] != 0 {
+//                 continue;
+//             }
+
+//             let row = idx / 9;
+//             let col = idx % 9;
+//             let box_idx = (row / 3) * 3 + col / 3;
+
+//             let expected =
+//                 !(solver.row_mask[row]
+//                     | solver.col_mask[col]
+//                     | solver.box_mask[box_idx])
+//                     & ALL_DIGITS;
+
+//             assert_eq!(
+//                 expected,
+//                 solver.candidate_mask[idx],
+//                 "Candidate mask mismatch at cell {}",
+//                 idx
+//             );
+
+//             assert_eq!(
+//                 expected.count_ones() as u8,
+//                 solver.candidate_count[idx],
+//                 "Candidate count mismatch at cell {}",
+//                 idx
+//             );
+//         }
+//     }
+
+//     fn verify_everything(solver: &Solver) {
+//         solver.debug_check();
+//         verify_masks(solver);
+//     }
+
+//     #[test]
+// fn test_nested_update_restore() {
+//     let mut solver = Solver::new(BOARD);
+
+//     verify_everything(&solver);
+
+//     let mut history = Vec::new();
+
+//     // Make 3 legal moves
+//     for _ in 0..3 {
+//         let (idx, _) = solver.get_min_candidate_idx();
+//         assert_ne!(idx, 81);
+
+//         let mask = solver.get_candidates(idx);
+//         assert!(mask != 0);
+
+//         let digit = mask.trailing_zeros() as u8;
+
+//         let (log, len) = solver.update_state(idx, digit);
+
+//         history.push((idx, digit, log, len));
+
+//         verify_everything(&solver);
+//     }
+
+//     // Restore in reverse order
+//     while let Some((idx, digit, log, len)) = history.pop() {
+//         solver.restore_state(log, len, idx, digit);
+//         verify_everything(&solver);
+//     }
+
+//     assert_eq!(solver.board, BOARD);
+// }
+
+//     #[test]
+// fn test_many_updates_and_restores() {
+//     let mut solver = Solver::new(BOARD);
+
+//     verify_everything(&solver);
+
+//     let mut history = Vec::new();
+
+// for step in 0..30 {
+//     let (idx, _) = solver.get_min_candidate_idx();
+//     let mask = solver.get_candidates(idx);
+//     let digit = mask.trailing_zeros() as u8;
+
+//     println!("Step {}: placing {} at {}", step, digit, idx);
+
+//     let (log, len) = solver.update_state(idx, digit);
+//     history.push((idx, digit, log, len));
+
+//     if std::panic::catch_unwind(|| {
+//         verify_everything(&solver);
+//     }).is_err() {
+//         println!("FAILED AFTER STEP {}", step);
+//         break;
+//     }
+// }
+
+//     while let Some((idx, digit, log, len)) = history.pop() {
+//         solver.restore_state(log, len, idx, digit);
+//         verify_everything(&solver);
+//     }
+
+//     assert_eq!(solver.board, BOARD);
+// }
+
 // }
