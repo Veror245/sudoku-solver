@@ -130,7 +130,7 @@ fn main() {
     euler_solve("opt_mrv");
     euler_solve("bit_mrv");
 
-        // benchmark(100);
+    benchmark(1000);
 
     
     
@@ -223,6 +223,36 @@ fn load_data() -> Vec<[[u8; 9]; 9]> {
     boards
 }
 
+fn load_data_flat() -> Vec<[u8; 81]> {
+    let contents = fs::read_to_string("./data/hardest_puzzles")
+        .expect("Failed to read puzzle file");
+
+    let mut boards: Vec<[u8; 81]> = Vec::new();
+
+    for line in contents.lines() {
+        if line.trim().is_empty() {
+            continue;
+        }
+
+        assert_eq!(line.len(), 81);
+
+        let mut board = [0u8; 81];
+
+        for (i, ch) in line.chars().enumerate() {
+            board[i] = match ch {
+                '.' => 0,
+                d => d.to_digit(10).unwrap() as u8,
+            };
+        }
+
+        boards.push(board);
+    }
+
+    println!("Loaded {} puzzles", boards.len());
+
+    boards
+}
+
 fn benchmark(n:usize) {
     let boards = load_data();
     let start = Instant::now();
@@ -238,18 +268,18 @@ fn benchmark(n:usize) {
     println!("Speed: {}/sec", puzzles);
 
 
-    let boards = load_data();
-    let start = Instant::now();
+    // let boards = load_data();
+    // let start = Instant::now();
 
-    for board in &boards[..n] {
-        let mut sudoku = Sudoku::new(*board);
-        sudoku.solve("mrv");
-    }
+    // for board in &boards[..n] {
+    //     let mut sudoku = Sudoku::new(*board);
+    //     sudoku.solve("mrv");
+    // }
 
-    let end = start.elapsed();
-    println!("Mrv {n} puzzles took {:?}", end);
-    let puzzles = n as f32 / end.as_secs_f32();
-    println!("Speed: {}/sec", puzzles);
+    // let end = start.elapsed();
+    // println!("Mrv {n} puzzles took {:?}", end);
+    // let puzzles = n as f32 / end.as_secs_f32();
+    // println!("Speed: {}/sec", puzzles);
 
 
     let boards = load_data();
@@ -262,6 +292,19 @@ fn benchmark(n:usize) {
 
     let end = start.elapsed();
     println!("Optimised Mrv {n} puzzles took {:?}", start.elapsed());
+    let puzzles = n as f32 / end.as_secs_f32();
+    println!("Speed: {}/sec", puzzles);
+
+    let boards = load_data_flat();
+    let start = Instant::now();
+
+    for board in &boards[..n] {
+        let mut sudoku = Solver::new(*board);
+        sudoku.solve();
+    }
+
+    let end = start.elapsed();
+    println!("Bitmask Mrv {n} puzzles took {:?}", start.elapsed());
     let puzzles = n as f32 / end.as_secs_f32();
     println!("Speed: {}/sec", puzzles);
     
