@@ -4,6 +4,7 @@ use sudoku_solver::euler_parser::parse_1d;
 use sudoku_solver::{solver::Sudoku, euler_parser::parse, better_solver::Solver};
 use std::time::Instant;
 use std::fs;
+use sudoku_solver::tui::tui;
 
 fn main() {
 
@@ -129,9 +130,11 @@ fn main() {
 
     //euler_solve("bt");
     //euler_solve("opt_mrv");
-    euler_solve("bit_mrv");
+    // euler_solve("bit_mrv");
 
-    benchmark(10000);
+    // benchmark(10000);
+
+    tui::run();
 
     
     
