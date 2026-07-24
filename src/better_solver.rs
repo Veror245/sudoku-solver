@@ -1,6 +1,7 @@
 
 const ALL_DIGITS: u16 = 0b1111111110;
 
+#[derive(Debug)]
 pub struct Solver {
     pub board: [u8; 81],
 
@@ -21,6 +22,14 @@ pub struct Solver {
  
 
 }
+
+impl Default for Solver {
+    fn default() -> Self {
+        Self::new([0; 81])
+    }
+}
+
+
 
 impl Solver {
     pub fn new(board: [u8; 81]) -> Self {
@@ -299,7 +308,7 @@ impl Solver {
         None
     }
 
-    fn _bit_mrv(&mut self) -> bool { /// the no buvket version
+    fn _bit_mrv(&mut self) -> bool { //the no buvket version
 
         let (min_idx, candidate_count) = self.get_min_candidate_idx();
         self.recursive_calls += 1;
@@ -481,6 +490,7 @@ impl Solver {
 
     
 }
+
 
 
 // #[cfg(test)]
