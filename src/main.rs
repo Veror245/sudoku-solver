@@ -130,7 +130,7 @@ fn main() {
     //euler_solve("opt_mrv");
     euler_solve("bit_mrv");
 
-    benchmark(48766);
+    benchmark(10000);
 
     
     

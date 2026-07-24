@@ -1,7 +1,3 @@
-use std::mem::transmute;
-
-
-
 
 const ALL_DIGITS: u16 = 0b1111111110;
 
@@ -14,8 +10,10 @@ pub struct Solver {
 
     candidate_mask: [u16; 81],
     candidate_count: [u8; 81],
-    
+
+    count_mask: [u128; 10],
     neighbors: [[u8; 20]; 81], 
+
     candidate_bucket: [[usize; 81]; 10], //actual candidate buckets containing rows as candidate counr and cols as the indexes
     bucket_len: [usize; 10], //bucket length of each group of candidate counts
     bucket_pos: [usize; 81] //position of each cell in the candidate bucker column
@@ -34,6 +32,7 @@ impl Solver {
         let mut bucket_pos: [usize; 81] = [100usize; 81];
         let mut candidate_mask: [u16; 81] = [0u16; 81];
         let mut candidate_count: [u8; 81] = [100; 81];
+        let mut count_mask: [u128; 10] = [0u128; 10];
         
 
         for (idx, cell) in board.iter().enumerate() {
@@ -85,9 +84,21 @@ impl Solver {
             bucket_len[count as usize] += 1;
         }
 
+        for (idx, cell) in board.iter().enumerate() {
+            if *cell != 0 {
+                continue;            
+            }
+
+            let count = candidate_count[idx];
+            count_mask[count as usize] |= 1u128<<idx; 
+
+        }
+
+
 
         Self { board:board, row_mask:row_mask, col_mask:col_mask, box_mask:box_mask, neighbors: neighbors, 
-            candidate_bucket: candidate_bucket, bucket_len:bucket_len, bucket_pos: bucket_pos, candidate_mask, candidate_count }
+            candidate_bucket: candidate_bucket, bucket_len:bucket_len, bucket_pos: bucket_pos, candidate_mask, candidate_count ,
+        count_mask: count_mask}
 
         
     }
@@ -96,35 +107,11 @@ impl Solver {
 
         self.candidate_mask[idx]
 
-        // const ALL_DIGITS: u16 = 0b1111111110;
-
-        // let row = idx / 9;
-        // let col = idx % 9;
-        // let box_idx = (row / 3) * 3 + col / 3 ;
-
-        // let used = self.row_mask[row] | self.col_mask[col] | self.box_mask[box_idx];
-        // let candidates = !used & ALL_DIGITS;
-
-        // return candidates
-        
-
     }
 
     fn _get_candidates_count(&self, idx: usize) -> u32{
 
         self.candidate_count[idx] as u32
-
-        // let row = idx / 9;
-        // let col = idx % 9;
-        // let box_idx = (row / 3) * 3 + col / 3 ;
-
-        // let used = self.row_mask[row] | self.col_mask[col] | self.box_mask[box_idx];
-        // let candidates = !used & ALL_DIGITS;
-
-        // let count = candidates.count_ones();
-
-        // count
-
     }
 
     fn _insert_candidate_into_masks(&mut self, candidate: u8, idx: usize) {
@@ -146,11 +133,10 @@ impl Solver {
         let col = idx % 9;
         let box_idx = (row / 3) * 3 + col / 3;
 
-        self.row_mask[row] ^= 1 << candidate; 
-        self.col_mask[col] ^= 1 << candidate; 
-        self.box_mask[box_idx] ^= 1 << candidate; 
-
-        
+        self.row_mask[row] &= !(1 << candidate); 
+        self.col_mask[col] &= !(1 << candidate); 
+        self.box_mask[box_idx] &= !(1 << candidate); 
+  
 
     }
 
@@ -167,17 +153,77 @@ impl Solver {
 
     fn get_min_candidate_idx(&self) -> (usize, u8) {
 
-        let idx: usize;
-        let count: u8 = 0;
-        
-        for i in 0..=9 {
-            if self.bucket_len[i] > 0 {
-                idx = self.candidate_bucket[i][0];
-                return (idx, i as u8)
+        for i in 1..=9 {
+            if self.count_mask[i] != 0 {
+               return (self.count_mask[i].trailing_zeros() as usize, i as u8);
             }
-            
         }
-        (81, count)
+
+        (81, 0)
+
+    }
+
+    fn update_state_bit(&mut self, idx: usize, candidate: u8) -> u128 {
+        /*
+        candidate mask uses cell idx as its idx, same for candidate count */
+        let candidate_count = self.candidate_count[idx] as usize;
+        self.board[idx] = candidate;
+
+        let mut affected_neighbors = 0u128;
+
+        for n in self.neighbors[idx] {
+            let n = n as usize;
+
+            if self.board[n] != 0 {
+                continue;
+            }
+
+            if (self.candidate_mask[n] & (1 << candidate)) == 0 {
+                continue;
+            }
+
+            self.count_mask[self.candidate_count[n] as usize] &= !(1u128<<n);
+
+
+            self.candidate_mask[n] &= !(1 << candidate);
+            self.candidate_count[n] -= 1;
+
+            self.count_mask[self.candidate_count[n] as usize] |= 1u128<<n;
+
+            affected_neighbors |= 1u128<<n;
+
+        }
+
+        self.count_mask[candidate_count] &= !(1u128 << idx);
+
+        self._insert_candidate_into_masks(candidate, idx);
+
+        affected_neighbors
+    }
+
+    fn restore_state_bit(&mut self, affected_neighbors: &mut u128, idx: usize, candidate: u8) {
+
+        self.board[idx] = 0;
+
+        while *affected_neighbors != 0 {
+            let n = (*affected_neighbors).trailing_zeros() as usize;
+
+            self.count_mask[self.candidate_count[n] as usize] &= !(1u128<<n);
+
+
+            self.candidate_mask[n] |= 1 << candidate;
+            self.candidate_count[n] += 1;
+
+            self.count_mask[self.candidate_count[n] as usize] |= 1u128<<n;
+
+            *affected_neighbors &= !(1u128 << n) ;
+        }
+
+        let candidate_count = self.candidate_count[idx] as usize;
+
+        self.count_mask[candidate_count] |= 1u128 << idx;
+
+        self._remove_candidate_from_masks(candidate, idx);
 
     }
 
@@ -366,9 +412,10 @@ impl Solver {
 
     }
 
-     fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
+    fn _bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 
         let (min_idx, candidate_count) = self.get_min_candidate_idx();
+        
         
         if min_idx != 81 {
             let mut candidates = self.get_candidates(min_idx); 
@@ -378,6 +425,36 @@ impl Solver {
                 let (an, anl) = self.update_state(min_idx, digit as u8);
                 if self.bit_mrv() == false {
                     self.restore_state(an, anl, min_idx, digit as u8);
+                }  
+                else {
+                    return true;
+                }
+            }
+            
+        } else {
+            return true
+        }
+
+        false
+
+    }
+
+    fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
+
+        let (min_idx, candidate_count) = self.get_min_candidate_idx();
+
+        if self.count_mask[0] != 0 {
+            return false;
+        }
+        
+        if min_idx != 81 {
+            let mut candidates = self.get_candidates(min_idx); 
+            while candidates != 0 {
+                let digit = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
+                candidates &= !(1 << digit);
+                let mut an:u128 = self.update_state_bit(min_idx, digit as u8);
+                if self.bit_mrv() == false {
+                    self.restore_state_bit(&mut an,  min_idx, digit as u8);
                 }  
                 else {
                     return true;
