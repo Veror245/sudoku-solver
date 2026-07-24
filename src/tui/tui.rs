@@ -19,41 +19,68 @@ pub struct App {
     exit: bool,
 }
 
-pub fn run() -> color_eyre::Result<()> {
-    color_eyre::install()?;
-    ratatui::run(app)?;
-    Ok(())
-}
+// pub fn run() -> color_eyre::Result<()> {
+//     color_eyre::install()?;
+//     ratatui::run(App)?;
+//     Ok(())
+// }
 
-pub fn app(terminal: &mut DefaultTerminal) -> std::io::Result<()> {
-    loop {
-        terminal.draw(render)?;
-        if crossterm::event::read()?.is_key_press() {
-            break Ok(());
-        }
-    }
-}
+// pub fn app(terminal: &mut DefaultTerminal) -> std::io::Result<()> {
+//     loop {
+//         terminal.draw(render)?;
+//         if crossterm::event::read()?.is_key_press() {
+//             break Ok(());
+//         }
+//     }
+// }
 
-fn render(frame: &mut Frame) {
-    frame.render_widget("hello world", frame.area());
-}
+// fn render(frame: &mut Frame) {
+//     frame.render_widget("hello world", frame.area());
+// }
 
 impl App {
-    pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<> {
+    pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
         while !self.exit {
             terminal.draw(|frame|self.draw(frame))?;
-            self.handle_events();
+            self.handle_events()?;
         }
         Ok(())
     }
 
     fn draw(&self, frame: &mut Frame) {
-        todo!()
+        frame.render_widget(self, frame.area());
     }
 
     fn handle_events(&mut self) -> io::Result<()> {
-        todo!()
+        if let Event::Key(key) = event::read()? {
+        if key.kind == KeyEventKind::Press {
+            if key.code == KeyCode::Char('q') {
+                self.exit = true;
+            }
+        }
     }
 
-    
+    Ok(())
+    }
+   
+}
+
+
+impl Widget for &App {
+    fn render(self, area: Rect, buf: &mut Buffer)
+    where
+        Self: Sized
+    {
+        let title = Line::from("Sudoku");
+        let block = Block::bordered()
+            .title(title.centered())
+            .border_set(border::THICK);
+
+        Paragraph::new("Hello")
+            .centered()
+            .block(block)
+            .render(area, buf);
+
+        
+    }
 }

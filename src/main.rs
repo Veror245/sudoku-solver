@@ -4,9 +4,9 @@ use sudoku_solver::euler_parser::parse_1d;
 use sudoku_solver::{solver::Sudoku, euler_parser::parse, better_solver::Solver};
 use std::time::Instant;
 use std::fs;
-use sudoku_solver::tui::tui;
+use sudoku_solver::tui::tui::App;
 
-fn main() {
+fn main()->color_eyre::Result<()> {
 
     // let val:u16 = 1 << 6;
     // println!("{:08b}", val);
@@ -134,7 +134,16 @@ fn main() {
 
     // benchmark(10000);
 
-    tui::run();
+    color_eyre::install()?;
+
+    let board = [0; 81];
+    let mut app = App::default();
+
+    let mut terminal = ratatui::init();
+    app.run(&mut terminal)?;
+    ratatui::restore();
+
+    Ok(())
 
     
     
