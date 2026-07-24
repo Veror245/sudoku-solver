@@ -17,10 +17,6 @@ pub struct Solver {
     // candidate_bucket: [[usize; 81]; 10], //actual candidate buckets containing rows as candidate counr and cols as the indexes
     // bucket_len: [usize; 10], //bucket length of each group of candidate counts
     // bucket_pos: [usize; 81], //position of each cell in the candidate bucker column
-
-    prop_idx: [usize; 81],
-    prop_digit: [u8; 81],
-    prop_log: [u128; 81],
     pub recursive_calls: u128,
  
 
@@ -33,9 +29,9 @@ impl Solver {
         let mut col_mask = [0u16; 9];
         let mut box_mask = [0u16; 9];
         let mut neighbors = [[0u8; 20]; 81];
-        let mut candidate_bucket = [[ 100 as usize; 81]; 10];
-        let mut bucket_len = [0usize; 10];
-        let mut bucket_pos: [usize; 81] = [100usize; 81];
+        // let mut candidate_bucket = [[ 100 as usize; 81]; 10];
+        // let mut bucket_len = [0usize; 10];
+        // let mut bucket_pos: [usize; 81] = [100usize; 81];
         let mut candidate_mask: [u16; 81] = [0u16; 81];
         let mut candidate_count: [u8; 81] = [100; 81];
         let mut count_mask: [u128; 10] = [0u128; 10];
@@ -85,9 +81,9 @@ impl Solver {
             let count = mask.count_ones() as u8;
             candidate_count[idx] = count;
 
-            candidate_bucket[count as usize][bucket_len[count as usize]] = idx;
-            bucket_pos[idx] = bucket_len[count as usize];
-            bucket_len[count as usize] += 1;
+            // candidate_bucket[count as usize][bucket_len[count as usize]] = idx;
+            // bucket_pos[idx] = bucket_len[count as usize];
+            // bucket_len[count as usize] += 1;
         }
 
         for (idx, cell) in board.iter().enumerate() {
@@ -104,22 +100,23 @@ impl Solver {
 
         Self { board:board, row_mask:row_mask, col_mask:col_mask, box_mask:box_mask, neighbors: neighbors, 
             /*candidate_bucket: candidate_bucket, bucket_len:bucket_len, bucket_pos: bucket_pos,*/ candidate_mask, candidate_count ,
-        count_mask: count_mask,   recursive_calls: 0, prop_digit: [0; 81], prop_idx:  [0; 81], prop_log:  [0; 81]}
+        count_mask: count_mask,   recursive_calls: 0, /*prop_digit: [0; 81], prop_idx:  [0; 81], prop_log:  [0; 81]*/}
 
         
     }
 
-    fn get_candidates(&self, idx: usize) -> u16{
+    // fn get_candidates(&self, idx: usize) -> u16{
 
-        self.candidate_mask[idx]
+    //     self.candidate_mask[idx]
 
-    }
+    // }
 
-    fn _get_candidates_count(&self, idx: usize) -> u32{
+    // fn _get_candidates_count(&self, idx: usize) -> u32{
 
-        self.candidate_count[idx] as u32
-    }
+    //     self.candidate_count[idx] as u32
+    // }
 
+    #[inline(always)]
     fn _insert_candidate_into_masks(&mut self, candidate: u8, idx: usize) {
 
         let row = idx / 9;
@@ -133,6 +130,7 @@ impl Solver {
 
     }
 
+    #[inline(always)]
     fn _remove_candidate_from_masks(&mut self, candidate: u8, idx: usize) {
 
         let row = idx / 9;
@@ -146,16 +144,16 @@ impl Solver {
 
     }
 
-    fn _check_if_present(&self, candidate: u8, idx: usize) -> bool {
+    // fn _check_if_present(&self, candidate: u8, idx: usize) -> bool {
 
-        let row = idx / 9;
-        let col = idx % 9;
-        let box_idx = (row / 3) * 3 + col / 3;        
+    //     let row = idx / 9;
+    //     let col = idx % 9;
+    //     let box_idx = (row / 3) * 3 + col / 3;        
 
-        (self.row_mask[row] & (1<<candidate) != 0) || 
-        (self.col_mask[col] & (1<<candidate) != 0) || 
-        (self.box_mask[box_idx] & (1 << candidate) != 0)
-    }
+    //     (self.row_mask[row] & (1<<candidate) != 0) || 
+    //     (self.col_mask[col] & (1<<candidate) != 0) || 
+    //     (self.box_mask[box_idx] & (1 << candidate) != 0)
+    // }
 
     // fn get_min_candidate_idx(&self) -> (usize, u8) {
 
@@ -169,6 +167,7 @@ impl Solver {
 
     // }
 
+    #[inline(always)]
     fn get_min_candidate_idx(&self) -> (usize, u8) {
         for i in 0..=9 {
             let mask = self.count_mask[i];
@@ -207,6 +206,7 @@ impl Solver {
 
     // }
 
+    #[inline(always)]
     fn update_state_bit(&mut self, idx: usize, candidate: u8) -> u128 {
         /*
         candidate mask uses cell idx as its idx, same for candidate count */
@@ -245,6 +245,7 @@ impl Solver {
         affected_neighbors
     }
 
+    #[inline(always)]
     fn restore_state_bit(&mut self, affected_neighbors: &mut u128, idx: usize, candidate: u8) {
 
         self.board[idx] = 0;
@@ -485,13 +486,41 @@ impl Solver {
 
     // }
 
+    // fn propagate_singles(&self) -> bool {
+    //     let mut prop_length = 0;
+    //     let mut prop_idx = [0; 81];
+    //     let mut prop_digit = [0; 81];
+    //     let mut prop_log = [0u128; 81];
+
+    //     while self.count_mask[1] != 0 {
+    //         let idx = self.count_mask[1].trailing_zeros() as usize;
+    //         let prop_dig = self.candidate_mask[idx].trailing_zeros();
+    //         let anp:u128 = self.update_state_bit(idx, prop_dig as u8);
+    //         prop_idx[prop_length] = idx;
+    //         prop_digit[prop_length] = prop_dig as u8;
+    //         prop_log[prop_length] = anp;
+    //         prop_length += 1;
+    //         if self.count_mask[0] != 0 {
+    //             for i in (0..prop_length).rev() {
+    //             self.restore_state_bit(&mut prop_log[i], prop_idx[i], prop_digit[i] as u8);
+    //             }
+    //             self.restore_state_bit(&mut an, min_idx, digit as u8);
+    //             return false;
+    //         }
+            
+    //     }
+
+    //     true
+
+    // }
+
     fn _bit_mrv(&mut self) -> bool { /// the no buvket version
 
         let (min_idx, candidate_count) = self.get_min_candidate_idx();
         self.recursive_calls += 1;
         
         if min_idx != 81 {
-            let mut candidates = self.get_candidates(min_idx); 
+            let mut candidates = self.candidate_mask[min_idx]; 
             while candidates != 0 {
                 let digit = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
                 candidates &= !(1 << digit);
@@ -518,7 +547,7 @@ impl Solver {
         self.recursive_calls += 1;
         
         if min_idx != 81 {
-            let mut candidates = self.get_candidates(min_idx); 
+            let mut candidates = self.candidate_mask[min_idx]; 
             'outer: while candidates != 0 {
                 let mut prop_length = 0;
                 let mut prop_idx = [0; 81];
