@@ -14,9 +14,15 @@ pub struct Solver {
     count_mask: [u128; 10],
     neighbors: [[u8; 20]; 81], 
 
-    candidate_bucket: [[usize; 81]; 10], //actual candidate buckets containing rows as candidate counr and cols as the indexes
-    bucket_len: [usize; 10], //bucket length of each group of candidate counts
-    bucket_pos: [usize; 81] //position of each cell in the candidate bucker column
+    // candidate_bucket: [[usize; 81]; 10], //actual candidate buckets containing rows as candidate counr and cols as the indexes
+    // bucket_len: [usize; 10], //bucket length of each group of candidate counts
+    // bucket_pos: [usize; 81], //position of each cell in the candidate bucker column
+
+    prop_idx: [usize; 81],
+    prop_digit: [u8; 81],
+    prop_log: [u128; 81],
+    pub recursive_calls: u128,
+ 
 
 }
 
@@ -97,8 +103,8 @@ impl Solver {
 
 
         Self { board:board, row_mask:row_mask, col_mask:col_mask, box_mask:box_mask, neighbors: neighbors, 
-            candidate_bucket: candidate_bucket, bucket_len:bucket_len, bucket_pos: bucket_pos, candidate_mask, candidate_count ,
-        count_mask: count_mask}
+            /*candidate_bucket: candidate_bucket, bucket_len:bucket_len, bucket_pos: bucket_pos,*/ candidate_mask, candidate_count ,
+        count_mask: count_mask,   recursive_calls: 0, prop_digit: [0; 81], prop_idx:  [0; 81], prop_log:  [0; 81]}
 
         
     }
@@ -151,17 +157,55 @@ impl Solver {
         (self.box_mask[box_idx] & (1 << candidate) != 0)
     }
 
-    fn get_min_candidate_idx(&self) -> (usize, u8) {
+    // fn get_min_candidate_idx(&self) -> (usize, u8) {
 
-        for i in 1..=9 {
-            if self.count_mask[i] != 0 {
-               return (self.count_mask[i].trailing_zeros() as usize, i as u8);
+    //     for i in 0..=9 {
+    //         if self.count_mask[i] != 0 {
+    //            return (self.count_mask[i].trailing_zeros() as usize, i as u8);
+    //         }
+    //     }
+
+    //     (81, 0)
+
+    // }
+
+    fn get_min_candidate_idx(&self) -> (usize, u8) {
+        for i in 0..=9 {
+            let mask = self.count_mask[i];
+            if mask != 0 {
+                // Rotating offset based on recursion depth (0 to 127)
+                let start = (self.recursive_calls & 127) as u32;
+                
+                // Rotate the mask so we start searching from a dynamic position
+                let rotated_mask = mask.rotate_left(start);
+                
+                // Find the first set bit in the rotated mask
+                let pos = rotated_mask.trailing_zeros() as usize;
+                
+                // Mathematically reverse the rotation to get the actual cell index
+                let idx = (pos + 128 - start as usize) % 128;
+                
+                return (idx, i as u8);
             }
         }
-
         (81, 0)
-
     }
+
+    // fn get_min_candidate_idx_nobit(&self) -> (usize, u8) {
+
+    //     let idx: usize;
+    //     let count: u8 = 0;
+        
+    //     for i in 0..=9 {
+    //         if self.bucket_len[i] > 0 {
+    //             idx = self.candidate_bucket[i][0];
+    //             return (idx, i as u8)
+    //         }
+            
+    //     }
+    //     (81, count)
+
+    // }
 
     fn update_state_bit(&mut self, idx: usize, candidate: u8) -> u128 {
         /*
@@ -227,225 +271,224 @@ impl Solver {
 
     }
 
-    fn update_state(&mut self, idx: usize, candidate: u8) -> ([(u8, u8); 20], usize) {
-        let candidate_count = self.candidate_count[idx] as usize;
-        self.board[idx] = candidate;
+    // fn update_state(&mut self, idx: usize, candidate: u8) -> ([(u8, u8); 20], usize) {
+    //     let candidate_count = self.candidate_count[idx] as usize;
+    //     self.board[idx] = candidate;
 
-        let mut affected_neighbors = [(0u8, 0u8); 20];
-        let mut affected_len = 0;
+    //     let mut affected_neighbors = [(0u8, 0u8); 20];
+    //     let mut affected_len = 0;
 
-        // Remove affected neighbors from their buckets and update their candidates
-        for n in self.neighbors[idx] {
-            let n = n as usize;
+    //     // Remove affected neighbors from their buckets and update their candidates
+    //     for n in self.neighbors[idx] {
+    //         let n = n as usize;
 
-            if self.board[n] != 0 {
-                continue;
-            }
+    //         if self.board[n] != 0 {
+    //             continue;
+    //         }
 
-            // Was this digit actually a candidate?
-            if (self.candidate_mask[n] & (1 << candidate)) == 0 {
-                continue;
-            }
+    //         // Was this digit actually a candidate?
+    //         if (self.candidate_mask[n] & (1 << candidate)) == 0 {
+    //             continue;
+    //         }
 
-            let old_count = self.candidate_count[n];
+    //         let old_count = self.candidate_count[n];
 
-            // Save for restore
-            affected_neighbors[affected_len] = (n as u8, old_count);
-            affected_len += 1;
+    //         // Save for restore
+    //         affected_neighbors[affected_len] = (n as u8, old_count);
+    //         affected_len += 1;
 
-            // Remove from old bucket
-            let last = self.bucket_len[old_count as usize] - 1;
-            let pos = self.bucket_pos[n];
+    //         // Remove from old bucket
+    //         let last = self.bucket_len[old_count as usize] - 1;
+    //         let pos = self.bucket_pos[n];
 
-            self.candidate_bucket[old_count as usize][pos] = self.candidate_bucket[old_count as usize][last];
+    //         self.candidate_bucket[old_count as usize][pos] = self.candidate_bucket[old_count as usize][last];
 
-            self.bucket_pos[self.candidate_bucket[old_count as usize][last]] = pos;
+    //         self.bucket_pos[self.candidate_bucket[old_count as usize][last]] = pos;
 
-            self.bucket_pos[n] = 100;
-            self.bucket_len[old_count as usize] -= 1;
+    //         self.bucket_pos[n] = 100;
+    //         self.bucket_len[old_count as usize] -= 1;
 
-            // Update candidate state
-            self.candidate_mask[n] &= !(1 << candidate);
-            self.candidate_count[n] -= 1;
+    //         // Update candidate state
+    //         self.candidate_mask[n] &= !(1 << candidate);
+    //         self.candidate_count[n] -= 1;
 
-            let new_count = self.candidate_count[n];
+    //         let new_count = self.candidate_count[n];
 
-            // Insert into new bucket
-            self.candidate_bucket[new_count as usize][self.bucket_len[new_count as usize]] = n;
-            self.bucket_pos[n] = self.bucket_len[new_count as usize];
-            self.bucket_len[new_count as usize] += 1;
-        }
+    //         // Insert into new bucket
+    //         self.candidate_bucket[new_count as usize][self.bucket_len[new_count as usize]] = n;
+    //         self.bucket_pos[n] = self.bucket_len[new_count as usize];
+    //         self.bucket_len[new_count as usize] += 1;
+    //     }
 
-        // Remove placed cell from bucket
-        let last = self.bucket_len[candidate_count] - 1;
-        let pos = self.bucket_pos[idx];
+    //     // Remove placed cell from bucket
+    //     let last = self.bucket_len[candidate_count] - 1;
+    //     let pos = self.bucket_pos[idx];
 
-        self.candidate_bucket[candidate_count][pos] = self.candidate_bucket[candidate_count][last];
+    //     self.candidate_bucket[candidate_count][pos] = self.candidate_bucket[candidate_count][last];
 
-        self.bucket_pos[self.candidate_bucket[candidate_count][last]] = pos;
+    //     self.bucket_pos[self.candidate_bucket[candidate_count][last]] = pos;
 
-        self.bucket_pos[idx] = 100;
-        self.bucket_len[candidate_count] -= 1;
+    //     self.bucket_pos[idx] = 100;
+    //     self.bucket_len[candidate_count] -= 1;
 
-        // Update board constraints
-        self._insert_candidate_into_masks(candidate, idx);
+    //     // Update board constraints
+    //     self._insert_candidate_into_masks(candidate, idx);
 
-        (affected_neighbors, affected_len)
-    }
+    //     (affected_neighbors, affected_len)
+    // }
 
 
-    fn restore_state(
-    &mut self,
-    affected_neighbors: [(u8, u8); 20],
-    affected_len: usize,
-    idx: usize,
-    candidate: u8,
-    ) {
-    // Remove neighbors from their current buckets and restore candidates
+    // fn restore_state(
+    // &mut self,
+    // affected_neighbors: [(u8, u8); 20],
+    // affected_len: usize,
+    // idx: usize,
+    // candidate: u8,
+    // ) {
+    // // Remove neighbors from their current buckets and restore candidates
 
         
-        for i in 0..affected_len {
-            let (n, old_count) = affected_neighbors[i];
-            let n = n as usize;
+    //     for i in 0..affected_len {
+    //         let (n, old_count) = affected_neighbors[i];
+    //         let n = n as usize;
 
-            let current_count = self.candidate_count[n] as usize;
+    //         let current_count = self.candidate_count[n] as usize;
             
 
-            // Remove from current bucket
-            let last = self.bucket_len[current_count] - 1;
-            let pos = self.bucket_pos[n];
+    //         // Remove from current bucket
+    //         let last = self.bucket_len[current_count] - 1;
+    //         let pos = self.bucket_pos[n];
 
-            self.candidate_bucket[current_count][pos] = self.candidate_bucket[current_count][last];
+    //         self.candidate_bucket[current_count][pos] = self.candidate_bucket[current_count][last];
 
-            self.bucket_pos[self.candidate_bucket[current_count][last]] = pos;
-            self.bucket_pos[n] = 100;
-            self.bucket_len[current_count] -= 1;
+    //         self.bucket_pos[self.candidate_bucket[current_count][last]] = pos;
+    //         self.bucket_pos[n] = 100;
+    //         self.bucket_len[current_count] -= 1;
 
-            // Restore candidate state
-            self.candidate_mask[n] |= 1 << candidate;
-            self.candidate_count[n] = old_count;
+    //         // Restore candidate state
+    //         self.candidate_mask[n] |= 1 << candidate;
+    //         self.candidate_count[n] = old_count;
 
-            // Insert back into old bucket
-            self.candidate_bucket[old_count as usize][self.bucket_len[old_count as usize]] = n;
-            self.bucket_pos[n] = self.bucket_len[old_count as usize];
-            self.bucket_len[old_count as usize] += 1;
-        }
+    //         // Insert back into old bucket
+    //         self.candidate_bucket[old_count as usize][self.bucket_len[old_count as usize]] = n;
+    //         self.bucket_pos[n] = self.bucket_len[old_count as usize];
+    //         self.bucket_len[old_count as usize] += 1;
+    //     }
 
-        // Restore board and masks
-        self._remove_candidate_from_masks(candidate, idx);
-        self.board[idx] = 0;
+    //     // Restore board and masks
+    //     self._remove_candidate_from_masks(candidate, idx);
+    //     self.board[idx] = 0;
 
-        // Restore placed cell into its bucket
-        let count = self.candidate_count[idx] as usize;
-        self.candidate_bucket[count][self.bucket_len[count]] = idx;
-        self.bucket_pos[idx] = self.bucket_len[count];
-        self.bucket_len[count] += 1;
+    //     // Restore placed cell into its bucket
+    //     let count = self.candidate_count[idx] as usize;
+    //     self.candidate_bucket[count][self.bucket_len[count]] = idx;
+    //     self.bucket_pos[idx] = self.bucket_len[count];
+    //     self.bucket_len[count] += 1;
 
         
-    }
+    // }
 
 
-    fn bit_mrv_naked_s(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
+    // fn bit_mrv_naked_s(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 
-        let (min_idx, candidate_count) = self.get_min_candidate_idx();
+    //     let (min_idx, candidate_count) = self.get_min_candidate_idx();
+    //     self.recursive_calls += 1;
         
-        let mut prop_arr = [0;81];
-        let mut prop_dig_arr = [0; 81];
-        let mut prop_log : [([(u8, u8); 20], usize); 81] = [([(0, 0); 20], 0); 81];
+    //     let mut prop_arr = [0;81];
+    //     let mut prop_dig_arr = [0; 81];
+    //     let mut prop_log : [([(u8, u8); 20], usize); 81] = [([(0, 0); 20], 0); 81];
 
-        if min_idx != 81 {
-            let mut candidates = self.get_candidates(min_idx); 
-            'outer: while candidates != 0 {
-                let mut prop_length = 0;
-                let digit = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
-                candidates &= !(1 << digit);
-                let (an, anl) = self.update_state(min_idx, digit as u8);
-                while self.bucket_len[1] > 0 {
-                    let prop_idx = self.candidate_bucket[1][self.bucket_len[1]-1];
-                    let prop_candidates = self.get_candidates(prop_idx);
-                    let prop_dig = prop_candidates.trailing_zeros();
-                    prop_dig_arr[prop_length] = prop_dig;
-                    prop_arr[prop_length] = prop_idx;
-                    let (prop_affec_neigh, prop_affec_neigh_len) = self.update_state(prop_idx, prop_dig as u8);
-                    let log = (prop_affec_neigh, prop_affec_neigh_len);
-                    prop_log[prop_length] = log;
-                    prop_length += 1;
+    //     if min_idx != 81 {
+    //         let mut candidates = self.get_candidates(min_idx); 
+    //         'outer: while candidates != 0 {
+    //             let mut prop_length = 0;
+    //             let digit = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
+    //             candidates &= !(1 << digit);
+    //             let (an, anl) = self.update_state(min_idx, digit as u8);
+    //             while self.bucket_len[1] > 0 {
+    //                 let prop_idx = self.candidate_bucket[1][self.bucket_len[1]-1];
+    //                 let prop_candidates = self.get_candidates(prop_idx);
+    //                 let prop_dig = prop_candidates.trailing_zeros();
+    //                 prop_dig_arr[prop_length] = prop_dig;
+    //                 prop_arr[prop_length] = prop_idx;
+    //                 let (prop_affec_neigh, prop_affec_neigh_len) = self.update_state(prop_idx, prop_dig as u8);
+    //                 let log = (prop_affec_neigh, prop_affec_neigh_len);
+    //                 prop_log[prop_length] = log;
+    //                 prop_length += 1;
 
-                    if self.bucket_len[0] > 0 {
-                        if prop_length > 0 {
-                        for i in (0..prop_length).rev() {
-                            let (af, afl) = prop_log[i];
-                            let pc = prop_dig_arr[i];
-                            let pi = prop_arr[i];
-                            self.restore_state(af, afl, pi, pc as u8);
-                        }
-                    }   
+    //                 if self.bucket_len[0] > 0 {
+    //                     if prop_length > 0 {
+    //                     for i in (0..prop_length).rev() {
+    //                         let (af, afl) = prop_log[i];
+    //                         let pc = prop_dig_arr[i];
+    //                         let pi = prop_arr[i];
+    //                         self.restore_state(af, afl, pi, pc as u8);
+    //                     }
+    //                 }   
 
-                        self.restore_state(an, anl, min_idx, digit as u8);
+    //                     self.restore_state(an, anl, min_idx, digit as u8);
                       
-                        continue 'outer;
-                    }
-                }
-                if self.bit_mrv() == false {
+    //                     continue 'outer;
+    //                 }
+    //             }
+    //             if self.bit_mrv() == false {
                 
-                    if prop_length > 0 {
-                    for i in (0..prop_length).rev() {
-                        let (af, afl) = prop_log[i];
-                        let pc = prop_dig_arr[i];
-                        let pi = prop_arr[i];
-                        self.restore_state(af, afl, pi, pc as u8);
-                    }
-                } 
+    //                 if prop_length > 0 {
+    //                 for i in (0..prop_length).rev() {
+    //                     let (af, afl) = prop_log[i];
+    //                     let pc = prop_dig_arr[i];
+    //                     let pi = prop_arr[i];
+    //                     self.restore_state(af, afl, pi, pc as u8);
+    //                 }
+    //             } 
                     
-                    self.restore_state(an, anl, min_idx, digit as u8);
-                }  
-                else {
-                    return true;
-                }
-            }
+    //                 self.restore_state(an, anl, min_idx, digit as u8);
+    //             }  
+    //             else {
+    //                 return true;
+    //             }
+    //         }
             
-        } else {
-            return true
-        }
+    //     } else {
+    //         return true
+    //     }
 
-        false
+    //     false
 
-    }
+    // }
 
-    fn _bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
+    // fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
 
-        let (min_idx, candidate_count) = self.get_min_candidate_idx();
+    //     let (min_idx, candidate_count) = self.get_min_candidate_idx_nobit();
+    //     self.recursive_calls += 1;
         
         
-        if min_idx != 81 {
-            let mut candidates = self.get_candidates(min_idx); 
-            while candidates != 0 {
-                let digit = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
-                candidates &= !(1 << digit);
-                let (an, anl) = self.update_state(min_idx, digit as u8);
-                if self.bit_mrv() == false {
-                    self.restore_state(an, anl, min_idx, digit as u8);
-                }  
-                else {
-                    return true;
-                }
-            }
+    //     if min_idx != 81 {
+    //         let mut candidates = self.get_candidates(min_idx); 
+    //         while candidates != 0 {
+    //             let digit = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
+    //             candidates &= !(1 << digit);
+    //             let (an, anl) = self.update_state(min_idx, digit as u8);
+    //             if self.bit_mrv() == false {
+    //                 self.restore_state(an, anl, min_idx, digit as u8);
+    //             }  
+    //             else {
+    //                 return true;
+    //             }
+    //         }
             
-        } else {
-            return true
-        }
+    //     } else {
+    //         return true
+    //     }
 
-        false
+    //     false
 
-    }
+    // }
 
-    fn bit_mrv(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid
+    fn _bit_mrv(&mut self) -> bool { /// the no buvket version
 
         let (min_idx, candidate_count) = self.get_min_candidate_idx();
-
-        if self.count_mask[0] != 0 {
-            return false;
-        }
+        self.recursive_calls += 1;
         
         if min_idx != 81 {
             let mut candidates = self.get_candidates(min_idx); 
@@ -453,7 +496,59 @@ impl Solver {
                 let digit = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
                 candidates &= !(1 << digit);
                 let mut an:u128 = self.update_state_bit(min_idx, digit as u8);
-                if self.bit_mrv() == false {
+                if self._bit_mrv() == false {
+                    self.restore_state_bit(&mut an,  min_idx, digit as u8);
+                }  
+                else {
+                    return true;
+                }
+            }
+            
+        } else {
+            return true
+        }
+
+        false
+
+    }
+
+    fn _bit_mrv_singles(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid, the no buvket version
+
+        let (min_idx, candidate_count) = self.get_min_candidate_idx();
+        self.recursive_calls += 1;
+        
+        if min_idx != 81 {
+            let mut candidates = self.get_candidates(min_idx); 
+            'outer: while candidates != 0 {
+                let mut prop_length = 0;
+                let mut prop_idx = [0; 81];
+                let mut prop_digit = [0; 81];
+                let mut prop_log = [0u128; 81];
+                let digit = candidates.trailing_zeros(); //trailing zeroes gives the digits ayo, gotta update the candidates mask too
+                candidates &= !(1 << digit);
+                let mut an:u128 = self.update_state_bit(min_idx, digit as u8);
+                while self.count_mask[1] != 0 {
+                    let idx = self.count_mask[1].trailing_zeros() as usize;
+                    let prop_dig = self.candidate_mask[idx].trailing_zeros();
+                    let anp:u128 = self.update_state_bit(idx, prop_dig as u8);
+                    prop_idx[prop_length] = idx;
+                    prop_digit[prop_length] = prop_dig as u8;
+                    prop_log[prop_length] = anp;
+                    prop_length += 1;
+                    if self.count_mask[0] != 0 {
+                        for i in (0..prop_length).rev() {
+                        self.restore_state_bit(&mut prop_log[i], prop_idx[i], prop_digit[i] as u8);
+                        }
+                        self.restore_state_bit(&mut an, min_idx, digit as u8);
+                        continue 'outer;
+                    }
+                    
+                }
+                if self._bit_mrv_singles() == false {
+                    for i in (0..prop_length).rev() {
+                        self.restore_state_bit(&mut prop_log[i], prop_idx[i], prop_digit[i] as u8);
+                    }
+
                     self.restore_state_bit(&mut an,  min_idx, digit as u8);
                 }  
                 else {
@@ -472,7 +567,7 @@ impl Solver {
         
 
     pub fn solve(&mut self) -> bool {
-        return self.bit_mrv();
+        return self._bit_mrv_singles();
         
     }
 
@@ -576,166 +671,102 @@ impl Solver {
 // mod tests {
 //     use super::*;
 
-//     #[test]
-//     fn test_bucket_invariants() {
-//         let board = [
-//     9,8,0,7,0,0,6,0,0,
-//     7,5,0,0,4,0,0,0,0,
-//     0,0,3,0,0,8,0,7,0,
-//     5,0,0,0,0,7,0,3,0,
-//     0,0,9,4,0,0,0,0,0,
-//     0,0,0,2,0,1,0,0,3,
-//     0,0,0,0,0,0,1,0,9,
-//     0,0,0,5,0,8,0,0,0,
-//     0,2,0,0,0,0,0,6,0,
-// ];
-
-//         let mut solver = Solver::new(board);
-
-//         solver.debug_check();
-
-//         for i in 0..81 {
-//             if solver.board[i] == 0 {
-//                 assert!(
-//                     solver.bucket_pos[i] != 100,
-//                     "Cell {} never got a bucket position!",
-//                     i
-//                 );
-//             }
-//         }
-
-//         let idx = 2;
-//         let candidate = 1;
-
-//         let (affected_neighbors, affected_len) = solver.update_state(2, 1);
-//         solver.debug_check();
-
-//         solver.restore_state(affected_neighbors, affected_len, idx, candidate);
-//         solver.debug_check();
-//         }
-// }
-
-
-
-// #[cfg(test)]
-// mod tests_2 {
-//     use super::*;
-
 //     const BOARD: [u8; 81] = [
 //         9,8,0,7,0,0,6,0,0,
 //         7,5,0,0,4,0,0,0,0,
 //         0,0,3,0,0,8,0,7,0,
 //         5,0,0,0,0,7,0,3,0,
 //         0,0,9,4,0,0,0,0,0,
-//         0,0,0,2,0,1,0,0,3,
-//         0,0,0,0,0,0,1,0,9,
-//         0,0,0,5,0,8,0,0,0,
-//         5,2,0,0,0,0,0,6,0,
+//         0,0,0,0,2,0,1,0,0,
+//         3,0,0,0,0,0,0,0,1,
+//         0,9,0,0,0,5,0,8,0,
+//         0,0,5,2,0,0,0,0,6,
 //     ];
 
-//     fn verify_masks(solver: &Solver) {
-//         for idx in 0..81 {
-//             if solver.board[idx] != 0 {
-//                 continue;
-//             }
+//     fn verify_candidate_state(a: &Solver, b: &Solver) {
+//         assert_eq!(a.board, b.board);
 
-//             let row = idx / 9;
-//             let col = idx % 9;
-//             let box_idx = (row / 3) * 3 + col / 3;
-
-//             let expected =
-//                 !(solver.row_mask[row]
-//                     | solver.col_mask[col]
-//                     | solver.box_mask[box_idx])
-//                     & ALL_DIGITS;
-
+//         for i in 0..81 {
 //             assert_eq!(
-//                 expected,
-//                 solver.candidate_mask[idx],
-//                 "Candidate mask mismatch at cell {}",
-//                 idx
+//                 a.candidate_mask[i],
+//                 b.candidate_mask[i],
+//                 "candidate_mask mismatch at cell {}",
+//                 i
 //             );
 
 //             assert_eq!(
-//                 expected.count_ones() as u8,
-//                 solver.candidate_count[idx],
-//                 "Candidate count mismatch at cell {}",
-//                 idx
+//                 a.candidate_count[i],
+//                 b.candidate_count[i],
+//                 "candidate_count mismatch at cell {}",
+//                 i
 //             );
 //         }
 //     }
 
-//     fn verify_everything(solver: &Solver) {
-//         solver.debug_check();
-//         verify_masks(solver);
+//     #[test]
+//     fn test_state_sync() {
+//         let mut bucket = Solver::new(BOARD);
+//         let mut bit = Solver::new(BOARD);
+
+//         let mut bucket_hist = Vec::new();
+//         let mut bit_hist = Vec::new();
+
+//         for step in 0..10 {
+//             let (idx, _) = bucket.get_min_candidate_idx_nobit();
+//             let digit = bucket.get_candidates(idx).trailing_zeros() as u8;
+
+//             let bucket_state = bucket.update_state(idx, digit);
+//             let bit_state = bit.update_state_bit(idx, digit);
+
+//             bucket_hist.push((idx, digit, bucket_state));
+//             bit_hist.push((idx, digit, bit_state));
+
+//             verify_candidate_state(&bucket, &bit);
+
+//             println!("Step {} OK", step);
+//         }
+
+//         while let Some((idx, digit, (an, anl))) = bucket_hist.pop() {
+//             bucket.restore_state(an, anl, idx, digit);
+//         }
+
+//         while let Some((idx, digit, mut an)) = bit_hist.pop() {
+//             bit.restore_state_bit(&mut an, idx, digit);
+//         }
+
+//         verify_candidate_state(&bucket, &bit);
+//         assert_eq!(bucket.board, BOARD);
+//         assert_eq!(bit.board, BOARD);
 //     }
 
 //     #[test]
-// fn test_nested_update_restore() {
-//     let mut solver = Solver::new(BOARD);
+//     fn test_mrv_equivalence() {
+//         let mut bucket = Solver::new(BOARD);
+//         let mut bit = Solver::new(BOARD);
 
-//     verify_everything(&solver);
+//         for step in 0..20 {
+//             let (idx_bucket, cnt_bucket) = bucket.get_min_candidate_idx_nobit();
+//             let (idx_bit, cnt_bit) = bit.get_min_candidate_idx();
 
-//     let mut history = Vec::new();
+//             assert_eq!(
+//                 cnt_bucket, cnt_bit,
+//                 "MRV count diverged at step {}",
+//                 step
+//             );
 
-//     // Make 3 legal moves
-//     for _ in 0..3 {
-//         let (idx, _) = solver.get_min_candidate_idx();
-//         assert_ne!(idx, 81);
-
-//         let mask = solver.get_candidates(idx);
-//         assert!(mask != 0);
-
-//         let digit = mask.trailing_zeros() as u8;
-
-//         let (log, len) = solver.update_state(idx, digit);
-
-//         history.push((idx, digit, log, len));
-
-//         verify_everything(&solver);
-//     }
-
-//     // Restore in reverse order
-//     while let Some((idx, digit, log, len)) = history.pop() {
-//         solver.restore_state(log, len, idx, digit);
-//         verify_everything(&solver);
-//     }
-
-//     assert_eq!(solver.board, BOARD);
+//             if idx_bucket != idx_bit {
+//     println!(
+//         "Tie: bucket chose {}, bit chose {} (count={})",
+//         idx_bucket, idx_bit, cnt_bucket
+//     );
 // }
 
-//     #[test]
-// fn test_many_updates_and_restores() {
-//     let mut solver = Solver::new(BOARD);
+//             let digit = bucket.get_candidates(idx_bucket).trailing_zeros() as u8;
 
-//     verify_everything(&solver);
+//             bucket.update_state(idx_bucket, digit);
+//             bit.update_state_bit(idx_bucket, digit);
 
-//     let mut history = Vec::new();
-
-// for step in 0..30 {
-//     let (idx, _) = solver.get_min_candidate_idx();
-//     let mask = solver.get_candidates(idx);
-//     let digit = mask.trailing_zeros() as u8;
-
-//     println!("Step {}: placing {} at {}", step, digit, idx);
-
-//     let (log, len) = solver.update_state(idx, digit);
-//     history.push((idx, digit, log, len));
-
-//     if std::panic::catch_unwind(|| {
-//         verify_everything(&solver);
-//     }).is_err() {
-//         println!("FAILED AFTER STEP {}", step);
-//         break;
+//             verify_candidate_state(&bucket, &bit);
+//         }
 //     }
-// }
-
-//     while let Some((idx, digit, log, len)) = history.pop() {
-//         solver.restore_state(log, len, idx, digit);
-//         verify_everything(&solver);
-//     }
-
-//     assert_eq!(solver.board, BOARD);
-// }
-
 // }

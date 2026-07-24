@@ -1,4 +1,5 @@
 
+use sudoku_solver::better_solver;
 use sudoku_solver::euler_parser::parse_1d;
 use sudoku_solver::{solver::Sudoku, euler_parser::parse, better_solver::Solver};
 use std::time::Instant;
@@ -173,6 +174,7 @@ fn euler_solve(mode: &str) {
 
         println!("final Sum: {}", three);
     } else if mode == "bit_mrv" {
+        let mut total_calls = 0;
         let res = parse_1d("./data/sudoku.txt").unwrap();
         let start = Instant::now();
         for s in res.boards {
@@ -180,11 +182,13 @@ fn euler_solve(mode: &str) {
             let mut sudoku = Solver::new(s);
             if sudoku.solve() == true {
 
+                total_calls += sudoku.recursive_calls;
                 three += (sudoku.board[0] as i32)*100 + (sudoku.board[1] as i32) * 10 + sudoku.board[2] as i32;
                 continue;
             }
         }
         println!("Time taken to solve eulers 96 50 sudokus with bit_mrv: {:?}", start.elapsed());
+        println!("TOtal recursive calls: {}", total_calls);
 
         println!("final Sum: {}", three);
 
@@ -298,6 +302,7 @@ fn benchmark(n:usize) {
 
     let boards = load_data_flat();
     let mut solvers = Vec::with_capacity(boards.len());
+    let mut total_calls = 0;
 
     for board in boards {
         solvers.push(Solver::new(board));
@@ -310,6 +315,7 @@ fn benchmark(n:usize) {
 
     for solver in &mut solvers[..n] {
         solver.solve();
+        total_calls += solver.recursive_calls;
     }
 
     let elapsed = start.elapsed();
@@ -318,5 +324,7 @@ fn benchmark(n:usize) {
 
     let puzzles_per_sec = n as f64 / elapsed.as_secs_f64();
     println!("Throughput: {:.0} puzzles/sec", puzzles_per_sec);
+
+    println!("TOtal recursive calls: {}", total_calls);
 
 }
