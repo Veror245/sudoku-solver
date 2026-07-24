@@ -8,6 +8,10 @@ pub struct Solver {
     col_mask: [u16; 9],
     box_mask: [u16; 9],
 
+    row_of:[usize; 81],
+    col_of:[usize; 81],
+    box_of:[usize; 81],
+
     candidate_mask: [u16; 81],
     candidate_count: [u8; 81],
 
@@ -35,6 +39,9 @@ impl Solver {
         let mut candidate_mask: [u16; 81] = [0u16; 81];
         let mut candidate_count: [u8; 81] = [100; 81];
         let mut count_mask: [u128; 10] = [0u128; 10];
+        let mut row_of = [0; 81];
+        let mut col_of = [0; 81];
+        let mut box_of = [0; 81];
         
 
         for (idx, cell) in board.iter().enumerate() {
@@ -42,6 +49,10 @@ impl Solver {
             let row = idx / 9;
             let col = idx % 9;
             let box_idx = (row / 3) * 3 + col / 3 ;
+
+            row_of[idx] = row;
+            col_of[idx] = col;
+            box_of[idx] = box_idx;
 
             if *cell != 0 {
                 row_mask[row] |= 1 << *cell;
@@ -100,7 +111,7 @@ impl Solver {
 
         Self { board:board, row_mask:row_mask, col_mask:col_mask, box_mask:box_mask, neighbors: neighbors, 
             /*candidate_bucket: candidate_bucket, bucket_len:bucket_len, bucket_pos: bucket_pos,*/ candidate_mask, candidate_count ,
-        count_mask: count_mask,   recursive_calls: 0, /*prop_digit: [0; 81], prop_idx:  [0; 81], prop_log:  [0; 81]*/}
+        count_mask: count_mask,   recursive_calls: 0, /*prop_digit: [0; 81], prop_idx:  [0; 81], prop_log:  [0; 81]*/row_of, col_of, box_of}
 
         
     }
@@ -119,13 +130,9 @@ impl Solver {
     #[inline(always)]
     fn _insert_candidate_into_masks(&mut self, candidate: u8, idx: usize) {
 
-        let row = idx / 9;
-        let col = idx % 9;
-        let box_idx = (row / 3) * 3 + col / 3 ;
-
-        self.row_mask[row] |= 1 << candidate;
-        self.col_mask[col] |= 1 << candidate;
-        self.box_mask[box_idx] |= 1 << candidate;
+        self.row_mask[self.row_of[idx]] |= 1 << candidate;
+        self.col_mask[self.col_of[idx]] |= 1 << candidate;
+        self.box_mask[self.box_of[idx]] |= 1 << candidate;
 
 
     }
@@ -133,13 +140,9 @@ impl Solver {
     #[inline(always)]
     fn _remove_candidate_from_masks(&mut self, candidate: u8, idx: usize) {
 
-        let row = idx / 9;
-        let col = idx % 9;
-        let box_idx = (row / 3) * 3 + col / 3;
-
-        self.row_mask[row] &= !(1 << candidate); 
-        self.col_mask[col] &= !(1 << candidate); 
-        self.box_mask[box_idx] &= !(1 << candidate); 
+        self.row_mask[self.row_of[idx]] &= !(1 << candidate); 
+        self.col_mask[self.col_of[idx]] &= !(1 << candidate); 
+        self.box_mask[self.box_of[idx]] &= !(1 << candidate); 
   
 
     }
@@ -514,6 +517,96 @@ impl Solver {
 
     // }
 
+    #[inline(always)]
+    fn find_hidden_single(&self, idx: usize) -> Option<(usize, u8)> {
+        let r = self.row_of[idx];
+        let c = self.col_of[idx];
+        let b = self.box_of[idx];
+
+        let mut last_pos = [0usize; 10];
+
+        // Check Row
+        let mut once = 0u16;
+        let mut multiple = 0u16;
+        for i in 0..9 {
+            let cell = r * 9 + i;
+            if self.board[cell] != 0 { continue; }
+            let mut mask = self.candidate_mask[cell];
+            while mask != 0 {
+                let d = mask.trailing_zeros();
+                mask &= mask - 1; // Clear lowest set bit
+                let bit = 1u16 << d;
+                if (once & bit) != 0 {
+                    multiple |= bit;
+                } else {
+                    once |= bit;
+                    last_pos[d as usize] = cell;
+                }
+            }
+        }
+        let singles = once & !multiple;
+        if singles != 0 {
+            let d = singles.trailing_zeros() as u8;
+            return Some((last_pos[d as usize], d));
+        }
+
+        // Check Col
+        once = 0u16;
+        multiple = 0u16;
+        for i in 0..9 {
+            let cell = i * 9 + c;
+            if self.board[cell] != 0 { continue; }
+            let mut mask = self.candidate_mask[cell];
+            while mask != 0 {
+                let d = mask.trailing_zeros();
+                mask &= mask - 1;
+                let bit = 1u16 << d;
+                if (once & bit) != 0 {
+                    multiple |= bit;
+                } else {
+                    once |= bit;
+                    last_pos[d as usize] = cell;
+                }
+            }
+        }
+        let singles = once & !multiple;
+        if singles != 0 {
+            let d = singles.trailing_zeros() as u8;
+            return Some((last_pos[d as usize], d));
+        }
+
+        // Check Box
+        once = 0u16;
+        multiple = 0u16;
+        let br = (b / 3) * 3;
+        let bc = (b % 3) * 3;
+        for i in 0..3 {
+            for j in 0..3 {
+                let cell = (br + i) * 9 + (bc + j);
+                if self.board[cell] != 0 { continue; }
+                let mut mask = self.candidate_mask[cell];
+                while mask != 0 {
+                    let d = mask.trailing_zeros();
+                    mask &= mask - 1;
+                    let bit = 1u16 << d;
+                    if (once & bit) != 0 {
+                        multiple |= bit;
+                    } else {
+                        once |= bit;
+                        last_pos[d as usize] = cell;
+                    }
+                }
+            }
+        }
+        let singles = once & !multiple;
+        if singles != 0 {
+            let d = singles.trailing_zeros() as u8;
+            return Some((last_pos[d as usize], d));
+        }
+
+        None
+    }
+
     fn _bit_mrv(&mut self) -> bool { /// the no buvket version
 
         let (min_idx, candidate_count) = self.get_min_candidate_idx();
@@ -541,7 +634,7 @@ impl Solver {
 
     }
 
-    fn _bit_mrv_singles(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid, the no buvket version
+    fn _bit_mrv_singles_(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid, the no buvket version
 
         let (min_idx, candidate_count) = self.get_min_candidate_idx();
         self.recursive_calls += 1;
@@ -593,7 +686,101 @@ impl Solver {
 
     }
 
+    fn _bit_mrv_singles(&mut self) -> bool { //placement valid would be candidate_count > 1 else no placement valid, the no buvket version
+
+        let (min_idx, candidate_count) = self.get_min_candidate_idx();
+        self.recursive_calls += 1;
         
+        if min_idx != 81 {
+            let mut candidates = self.candidate_mask[min_idx]; 
+            'outer: while candidates != 0 {
+                let mut prop_length = 0;
+                let mut prop_idx = [0; 81];
+                let mut prop_digit = [0; 81];
+                let mut prop_log = [0u128; 81];
+                
+                // Hidden single check queue
+                let mut check_idx = [0usize; 81];
+                let mut check_len = 0;
+                
+                let digit = candidates.trailing_zeros();
+                candidates &= !(1u16 << digit);
+                
+                let mut an: u128 = self.update_state_bit(min_idx, digit as u8);
+                
+                prop_idx[prop_length] = min_idx;
+                prop_digit[prop_length] = digit as u8;
+                prop_log[prop_length] = an;
+                prop_length += 1;
+                
+                check_idx[check_len] = min_idx;
+                check_len += 1;
+                
+                loop {
+                    if self.count_mask[0] != 0 {
+                        for i in (0..prop_length).rev() {
+                            let mut log = prop_log[i];
+                            self.restore_state_bit(&mut log, prop_idx[i], prop_digit[i]);
+                        }
+                        continue 'outer;
+                    }
+                    
+                    if self.count_mask[1] != 0 {
+                        let idx = self.count_mask[1].trailing_zeros() as usize;
+                        let prop_dig = self.candidate_mask[idx].trailing_zeros() as u8;
+                        let anp: u128 = self.update_state_bit(idx, prop_dig);
+                        
+                        prop_idx[prop_length] = idx;
+                        prop_digit[prop_length] = prop_dig;
+                        prop_log[prop_length] = anp;
+                        prop_length += 1;
+                        
+                        check_idx[check_len] = idx;
+                        check_len += 1;
+                    } else {
+                        let mut found = false;
+                        while check_len > 0 {
+                            check_len -= 1;
+                            let c_idx = check_idx[check_len];
+                            
+                            if let Some((h_idx, h_dig)) = self.find_hidden_single(c_idx) {
+                                let anp: u128 = self.update_state_bit(h_idx, h_dig);
+                                
+                                prop_idx[prop_length] = h_idx;
+                                prop_digit[prop_length] = h_dig;
+                                prop_log[prop_length] = anp;
+                                prop_length += 1;
+                                
+                                check_idx[check_len] = h_idx;
+                                check_len += 1;
+                                
+                                found = true;
+                                break;
+                            }
+                        }
+                        if !found {
+                            break;
+                        }
+                    }
+                }
+                
+                if self._bit_mrv_singles() == false {
+                    for i in (0..prop_length).rev() {
+                        let mut log = prop_log[i];
+                        self.restore_state_bit(&mut log, prop_idx[i], prop_digit[i]);
+                    }
+                }  
+                else {
+                    return true;
+                }
+            }
+            
+        } else {
+            return true
+        }
+
+        false
+    }
 
     pub fn solve(&mut self) -> bool {
         return self._bit_mrv_singles();
