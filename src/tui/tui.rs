@@ -2,13 +2,7 @@ use std::io;
 
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
-    buffer::Buffer,
-    layout::Rect,
-    style::Stylize,
-    symbols::border,
-    text::{Line, Text},
-    widgets::{Block, Paragraph, Widget},
-    DefaultTerminal, Frame,
+    DefaultTerminal, Frame, buffer::Buffer, layout::Rect, style::{Color, Stylize}, symbols::border, text::{Line, Text}, widgets::{Block, Paragraph, Table, Widget},
 };
 
 use crate::better_solver::Solver;
@@ -81,6 +75,15 @@ impl Widget for &App {
             .block(block)
             .render(area, buf);
 
+        let board_block = Block::bordered()
+            .title("Sudoku Board")
+            .border_set(border::HEAVY_DOUBLE_DASHED)
+            .bg(Color::Red);
+
+        Paragraph::new("Board goes here")
+            .centered()
+            .block(board_block)
+            .render(area, buf);
         
     }
 }
