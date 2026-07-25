@@ -6,7 +6,7 @@ use std::time::Instant;
 use std::fs;
 use sudoku_solver::tui::tui::App;
 
-fn main()->color_eyre::Result<()> {
+fn main()/*color_eyre::Result<()>*/ {
 
     // let val:u16 = 1 << 6;
     // println!("{:08b}", val);
@@ -130,20 +130,20 @@ fn main()->color_eyre::Result<()> {
 
     //euler_solve("bt");
     //euler_solve("opt_mrv");
-    // euler_solve("bit_mrv");
+    euler_solve("bit_mrv");
 
-    // benchmark(10000);
+    benchmark(10000);
 
-    color_eyre::install()?;
+    // color_eyre::install()?;
 
-    let board = [0; 81];
-    let mut app = App::default();
+    // let board = [0; 81];
+    // let mut app = App::default();
 
-    let mut terminal = ratatui::init();
-    app.run(&mut terminal)?;
-    ratatui::restore();
+    // let mut terminal = ratatui::init();
+    // app.run(&mut terminal)?;
+    // ratatui::restore();
 
-    Ok(())
+    // Ok(())
 
     
     
@@ -188,10 +188,16 @@ fn euler_solve(mode: &str) {
     } else if mode == "bit_mrv" {
         let mut total_calls = 0;
         let res = parse_1d("./data/sudoku.txt").unwrap();
+        let boards = parse_1d("./data/sudoku.txt").unwrap().boards;
+        let mut solvers = Vec::with_capacity(boards.len());
+
+        for board in boards {
+            solvers.push(Solver::new(board));
+        }
+
         let start = Instant::now();
-        for s in res.boards {
+        for sudoku in &mut solvers[..] {
             //c += 1;
-            let mut sudoku = Solver::new(s);
             if sudoku.solve() == true {
 
                 total_calls += sudoku.recursive_calls;
