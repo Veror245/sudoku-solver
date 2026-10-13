@@ -125,7 +125,7 @@ fn main() /*color_eyre::Result<()>*/
     euler_solve("opt_mrv");
     euler_solve("bit_mrv");
 
-    benchmark(1000);
+    benchmark(10000);
 
     // color_eyre::install()?;
 
