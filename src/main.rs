@@ -1,13 +1,12 @@
-
+use std::fs;
+use std::time::Instant;
 use sudoku_solver::better_solver;
 use sudoku_solver::euler_parser::parse_1d;
-use sudoku_solver::{solver::Sudoku, euler_parser::parse, better_solver::Solver};
-use std::time::Instant;
-use std::fs;
 use sudoku_solver::tui::tui::App;
+use sudoku_solver::{better_solver::Solver, euler_parser::parse, solver::Sudoku};
 
-fn main()/*color_eyre::Result<()>*/ {
-
+fn main() /*color_eyre::Result<()>*/
+{
     // let val:u16 = 1 << 6;
     // println!("{:08b}", val);
 
@@ -15,15 +14,15 @@ fn main()/*color_eyre::Result<()>*/ {
 
     // //insert 5 into row 1
     // row_mask[0] |= 1<< 5-1;
-    // println!("{:016b}", row_mask[0]); 
+    // println!("{:016b}", row_mask[0]);
 
     // //insert 2 into row 1
     // row_mask[0]  |= 1<<2-1;
     // println!("{:016b}", row_mask[0]);
 
     // let a: u16 = 4;
-    // println!("{:08b}", a); 
-    // println!("{:08b}", a >> a.trailing_zeros()); 
+    // println!("{:08b}", a);
+    // println!("{:08b}", a >> a.trailing_zeros());
 
     // //check if 5 is present
     // if (row_mask[0] & (1<<5-1)) == (1<<5-1){ //one way
@@ -34,105 +33,99 @@ fn main()/*color_eyre::Result<()>*/ {
     //     println!("5 is present");
     // }
 
+    //     let board: [[u8; 9]; 9] = [
+    //         [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //         [0, 9, 0, 0, 1, 0, 0, 3, 0],
+    //         [0, 0, 6, 0, 2, 0, 7, 0, 0],
+    //         [0, 0, 0, 3, 0, 4, 0, 0, 0],
+    //         [2, 1, 0, 0, 0, 0, 0, 9, 8],
+    //         [0, 0, 0, 0, 0, 0, 0, 0, 0],
+    //         [0, 0, 2, 5, 0, 6, 4, 0, 0],
+    //         [0, 8, 0, 0, 0, 0, 0, 1, 0],
+    //         [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    //     ];
 
+    //     let board = [
+    //          [1, 0, 0, 0, 0, 7, 0, 9, 0],
+    //     [0, 3, 0, 0, 2, 0, 0, 0, 8],
+    //     [0, 0, 9, 6, 0, 0, 5, 0, 0],
+    //     [0, 0, 5, 3, 0, 0, 9, 0, 0],
+    //     [0, 1, 0, 0, 8, 0, 0, 0, 2],
+    //     [6, 0, 0, 0, 0, 4, 0, 0, 0],
+    //     [3, 0, 0, 0, 0, 0, 0, 1, 0],
+    //     [0, 4, 0, 0, 0, 0, 0, 0, 7],
+    //     [0, 0, 7, 0, 0, 0, 3, 0, 0]
+    //     ];
 
-//     let board: [[u8; 9]; 9] = [
-//         [0, 0, 0, 0, 0, 0, 0, 0, 0],
-//         [0, 9, 0, 0, 1, 0, 0, 3, 0],
-//         [0, 0, 6, 0, 2, 0, 7, 0, 0],
-//         [0, 0, 0, 3, 0, 4, 0, 0, 0],
-//         [2, 1, 0, 0, 0, 0, 0, 9, 8],
-//         [0, 0, 0, 0, 0, 0, 0, 0, 0],
-//         [0, 0, 2, 5, 0, 6, 4, 0, 0],
-//         [0, 8, 0, 0, 0, 0, 0, 1, 0],
-//         [0, 0, 0, 0, 0, 0, 0, 0, 0]
-//     ];
+    //     // let mut board = [[0; 9]; 9];
+    //     // board[8][0] = 1;
+    //     // board[8][2] = 2;
 
-//     let board = [
-//          [1, 0, 0, 0, 0, 7, 0, 9, 0],
-//     [0, 3, 0, 0, 2, 0, 0, 0, 8],
-//     [0, 0, 9, 6, 0, 0, 5, 0, 0],
-//     [0, 0, 5, 3, 0, 0, 9, 0, 0],
-//     [0, 1, 0, 0, 8, 0, 0, 0, 2],
-//     [6, 0, 0, 0, 0, 4, 0, 0, 0],
-//     [3, 0, 0, 0, 0, 0, 0, 1, 0],
-//     [0, 4, 0, 0, 0, 0, 0, 0, 7],
-//     [0, 0, 7, 0, 0, 0, 3, 0, 0]
-//     ];
+    //     let mut sudoku = Sudoku::new(board);
+    //     println!("{}", sudoku.check_valid());
+    //     println!("{:?}", sudoku.get_min_candidate_count());
 
-    
+    //     let (m, n) = sudoku.get_len();
 
-//     // let mut board = [[0; 9]; 9];
-//     // board[8][0] = 1;
-//     // board[8][2] = 2;
+    //     for i in 0..m {
+    //         for j in 0..n {
+    //             print!("{} ",sudoku.board[i][j]);
+    //         }
+    //         println!();
+    //     }
 
-//     let mut sudoku = Sudoku::new(board);
-//     println!("{}", sudoku.check_valid());
-//     println!("{:?}", sudoku.get_min_candidate_count());
+    //     println!("--------------");
+    //     println!(" ");
 
-//     let (m, n) = sudoku.get_len();
+    //     sudoku.recursive_calls = 0;
 
-//     for i in 0..m {
-//         for j in 0..n {
-//             print!("{} ",sudoku.board[i][j]);
-//         }
-//         println!();
-//     }
+    //     let start = Instant::now();
+    //     if sudoku.solve("bt") == true {
+    //         // println!("");
+    //         // for i in 0..m {
+    //         //     for j in 0..n {
+    //         //         print!("{} ",sudoku.board[i][j]);
+    //         //     }
 
-//     println!("--------------");
-//     println!(" ");
+    //         //     println!("--");
+    //         // }
+    //     }
+    //     println!("Time taken to solve normal sudoku with backtrack: {:?} with {} calls with {} validity_checks", start.elapsed(),
+    //     sudoku.recursive_calls, sudoku.validity_checks);
 
-//     sudoku.recursive_calls = 0;
+    //   let board = [
+    //          [1, 0, 0, 0, 0, 7, 0, 9, 0],
+    //     [0, 3, 0, 0, 2, 0, 0, 0, 8],
+    //     [0, 0, 9, 6, 0, 0, 5, 0, 0],
+    //     [0, 0, 5, 3, 0, 0, 9, 0, 0],
+    //     [0, 1, 0, 0, 8, 0, 0, 0, 2],
+    //     [6, 0, 0, 0, 0, 4, 0, 0, 0],
+    //     [3, 0, 0, 0, 0, 0, 0, 1, 0],
+    //     [0, 4, 0, 0, 0, 0, 0, 0, 7],
+    //     [0, 0, 7, 0, 0, 0, 3, 0, 0]
+    //     ];
 
-//     let start = Instant::now();
-//     if sudoku.solve("bt") == true {
-//         // println!("");
-//         // for i in 0..m {
-//         //     for j in 0..n {
-//         //         print!("{} ",sudoku.board[i][j]);
-//         //     }
-            
-//         //     println!("--");
-//         // }
-//     }
-//     println!("Time taken to solve normal sudoku with backtrack: {:?} with {} calls with {} validity_checks", start.elapsed(), 
-//     sudoku.recursive_calls, sudoku.validity_checks);
+    //     let mut sudoku = Sudoku::new(board);
 
-//   let board = [
-//          [1, 0, 0, 0, 0, 7, 0, 9, 0],
-//     [0, 3, 0, 0, 2, 0, 0, 0, 8],
-//     [0, 0, 9, 6, 0, 0, 5, 0, 0],
-//     [0, 0, 5, 3, 0, 0, 9, 0, 0],
-//     [0, 1, 0, 0, 8, 0, 0, 0, 2],
-//     [6, 0, 0, 0, 0, 4, 0, 0, 0],
-//     [3, 0, 0, 0, 0, 0, 0, 1, 0],
-//     [0, 4, 0, 0, 0, 0, 0, 0, 7],
-//     [0, 0, 7, 0, 0, 0, 3, 0, 0]
-//     ];
+    //     let start = Instant::now();
+    //     if sudoku.solve("opt_mrv") == true {
+    //         // println!("");
+    //         // for i in 0..m {
+    //         //     for j in 0..n {
+    //         //         print!("{} ",sudoku.board[i][j]);
+    //         //     }
 
-//     let mut sudoku = Sudoku::new(board);
-    
-
-
-//     let start = Instant::now();
-//     if sudoku.solve("opt_mrv") == true {
-//         // println!("");
-//         // for i in 0..m {
-//         //     for j in 0..n {
-//         //         print!("{} ",sudoku.board[i][j]);
-//         //     }
-            
-//         //     println!("--");
-//         // }
-//     }
-//     println!("Time taken to solve normal sudoku with optimsed mrv: {:?} with {} calls with {} validity_checks", start.elapsed(), 
-//     sudoku.recursive_calls, sudoku.validity_checks);
+    //         //     println!("--");
+    //         // }
+    //     }
+    //     println!("Time taken to solve normal sudoku with optimsed mrv: {:?} with {} calls with {} validity_checks", start.elapsed(),
+    //     sudoku.recursive_calls, sudoku.validity_checks);
 
     //euler_solve("bt");
-    //euler_solve("opt_mrv");
+    euler_solve("opt_mrv");
     euler_solve("bit_mrv");
 
-    benchmark(10000);
+    benchmark(1000);
 
     // color_eyre::install()?;
 
@@ -144,18 +137,11 @@ fn main()/*color_eyre::Result<()>*/ {
     // ratatui::restore();
 
     // Ok(())
-
-    
-    
 }
 
-
-
 fn euler_solve(mode: &str) {
-
     let mut three: i32 = 0;
     let mut _c = 0;
-
 
     let res = parse("./data/sudoku.txt").unwrap();
     if mode == "bt" {
@@ -164,25 +150,34 @@ fn euler_solve(mode: &str) {
             //c += 1;
             let mut sudoku = Sudoku::new(s);
             if sudoku.solve("bt") == true {
-                three += (sudoku.board[0][0] as i32)*100 + (sudoku.board[0][1] as i32) * 10 + sudoku.board[0][2] as i32;
+                three += (sudoku.board[0][0] as i32) * 100
+                    + (sudoku.board[0][1] as i32) * 10
+                    + sudoku.board[0][2] as i32;
                 continue;
             }
         }
-        println!("Time taken to solve eulers 96 50 sudokus with normal backtrack: {:?}", start.elapsed());
+        println!(
+            "Time taken to solve eulers 96 50 sudokus with normal backtrack: {:?}",
+            start.elapsed()
+        );
 
         println!("final Sum: {}", three);
-
     } else if mode == "opt_mrv" {
         let start = Instant::now();
         for s in res.boards {
             //c += 1;
             let mut sudoku = Sudoku::new(s);
             if sudoku.solve("opt_mrv") == true {
-                three += (sudoku.board[0][0] as i32)*100 + (sudoku.board[0][1] as i32) * 10 + sudoku.board[0][2] as i32;
+                three += (sudoku.board[0][0] as i32) * 100
+                    + (sudoku.board[0][1] as i32) * 10
+                    + sudoku.board[0][2] as i32;
                 continue;
             }
         }
-        println!("Time taken to solve eulers 96 50 sudokus with opt_mrv: {:?}", start.elapsed());
+        println!(
+            "Time taken to solve eulers 96 50 sudokus with opt_mrv: {:?}",
+            start.elapsed()
+        );
 
         println!("final Sum: {}", three);
     } else if mode == "bit_mrv" {
@@ -199,23 +194,26 @@ fn euler_solve(mode: &str) {
         for sudoku in &mut solvers[..] {
             //c += 1;
             if sudoku.solve() == true {
-
                 total_calls += sudoku.recursive_calls;
-                three += (sudoku.board[0] as i32)*100 + (sudoku.board[1] as i32) * 10 + sudoku.board[2] as i32;
+                three += (sudoku.board[0] as i32) * 100
+                    + (sudoku.board[1] as i32) * 10
+                    + sudoku.board[2] as i32;
                 continue;
             }
         }
-        println!("Time taken to solve eulers 96 50 sudokus with bit_mrv: {:?}", start.elapsed());
+        println!(
+            "Time taken to solve eulers 96 50 sudokus with bit_mrv: {:?}",
+            start.elapsed()
+        );
         println!("TOtal recursive calls: {}", total_calls);
 
         println!("final Sum: {}", three);
-
     }
 }
 
-fn load_data() -> Vec<[[u8; 9]; 9]> {
-    let contents = fs::read_to_string("./data/hardest_puzzles")
-    .expect("Failed to read puzzle file");
+fn _load_data() -> Vec<[[u8; 9]; 9]> {
+    let contents =
+        fs::read_to_string("./data/hardest_puzzles").expect("Failed to read puzzle file");
 
     let mut boards: Vec<[[u8; 9]; 9]> = Vec::new();
 
@@ -247,8 +245,8 @@ fn load_data() -> Vec<[[u8; 9]; 9]> {
 }
 
 fn load_data_flat() -> Vec<[u8; 81]> {
-    let contents = fs::read_to_string("./data/hardest_puzzles")
-        .expect("Failed to read puzzle file");
+    let contents =
+        fs::read_to_string("./data/hardest_puzzles").expect("Failed to read puzzle file");
 
     let mut boards: Vec<[u8; 81]> = Vec::new();
 
@@ -276,7 +274,7 @@ fn load_data_flat() -> Vec<[u8; 81]> {
     boards
 }
 
-fn benchmark(n:usize) {
+fn benchmark(n: usize) {
     // let boards = load_data();
     // let start = Instant::now();
 
@@ -290,7 +288,6 @@ fn benchmark(n:usize) {
     // let puzzles = n as f32 / end.as_secs_f32();
     // println!("Speed: {}/sec", puzzles);
 
-
     // // let boards = load_data();
     // // let start = Instant::now();
 
@@ -303,7 +300,6 @@ fn benchmark(n:usize) {
     // // println!("Mrv {n} puzzles took {:?}", end);
     // // let puzzles = n as f32 / end.as_secs_f32();
     // // println!("Speed: {}/sec", puzzles);
-
 
     // let boards = load_data();
     // let start = Instant::now();
@@ -344,5 +340,4 @@ fn benchmark(n:usize) {
     println!("Throughput: {:.0} puzzles/sec", puzzles_per_sec);
 
     println!("TOtal recursive calls: {}", total_calls);
-
 }
